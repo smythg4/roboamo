@@ -1,16 +1,14 @@
 use csv::Reader;
 use std::{collections::{HashMap,HashSet, VecDeque}, path::Path};
 use std::time::Instant;
-//use rayon::prelude::*;
-use chrono::{NaiveDate, Utc};
-use colorize::AnsiColor;
+use chrono::NaiveDate;
 
 mod asm_parser;
 
 // you can do better than this, but it works for now
 type GenericError = Box<dyn std::error::Error + Send + Sync + 'static>;
 
-static CURRENT_DATE: NaiveDate = NaiveDate::from_ymd_opt(2025, 12, 31).unwrap();
+static CURRENT_DATE: NaiveDate = NaiveDate::from_ymd_opt(2025, 5, 31).unwrap();
 
 #[derive(Debug, Clone, PartialEq)]
 enum DutyStatus {
@@ -54,19 +52,6 @@ struct AssignmentPlan {
     unassigned_people: Vec<String>,
 }
 
-fn create_positions_to_fill(teams: &[Team]) -> Vec<(Team, String)> {
-    let mut positions = Vec::new();
-
-    for team in teams {
-        for position in &team.required_positions {
-            for _ in 0..position.count {
-                positions.push((team.clone(), position.qualification.clone()));
-            }
-        }
-    }
-    positions
-}
-
 fn calc_person_score(
     person: &Person,
     current_qual: &str,
@@ -100,7 +85,7 @@ fn calc_person_score(
         score += 10_000;
     }
 
-    score += person.qualifications.len() as i32 * 100;
+    score += i32::try_from(person.qualifications.len()).unwrap_or(0) * 100;
 
     for qual in &person.qualifications {
         if qual != current_qual {
@@ -118,11 +103,10 @@ fn calc_person_score(
         }
     }
 
-    if !high_demand_quals.contains(current_qual) {
-        if person.qualifications.iter().any(|q| high_demand_quals.contains(q)) {
+    if !high_demand_quals.contains(current_qual) && person.qualifications.iter().any(|q| high_demand_quals.contains(q)) {
             score += 100;
-        }
     }
+
     score
 }
 
@@ -135,7 +119,7 @@ fn find_best_available_person<'a>(
     remaining_positions: &VecDeque<(Team, String)>
 ) -> Option<(&'a Person, i32)> {
     if let Some(candidates) = qual_supply.get(qual) {
-        let mut available_candidates: Vec<_> = candidates.iter()
+        let available_candidates: Vec<_> = candidates.iter()
             .filter(|p| !assigned_people.contains(&p.name))
             .copied()
             .collect();
@@ -170,7 +154,7 @@ fn assign_teams(
 
     let mut qual_criticality: Vec<(String, f64)> = qual_demand.iter()
         .map(|(qual, demand)| {
-            let supply = qual_supply.get(qual).map_or(0, |v| v.len());
+            let supply = qual_supply.get(qual).map_or(0, std::vec::Vec::len);//|v| v.len());
             let ratio = supply as f64 / *demand as f64;
             (qual.clone(), ratio)
         }).collect();
@@ -254,7 +238,7 @@ fn analyze_bottlenecks(people: &[Person], teams: &[Team]) {
     let mut bottlenecks = Vec::new();
     
     for (qual, &demand_count) in &demand {
-        let supply_count = supply.get(qual).map_or(0, |v| v.len());
+        let supply_count = supply.get(qual).map_or(0, std::vec::Vec::len);//|v| v.len());
         let ratio = supply_count as f64 / demand_count as f64;
         bottlenecks.push((qual.clone(), supply_count, demand_count, ratio));
     }
@@ -264,14 +248,13 @@ fn analyze_bottlenecks(people: &[Person], teams: &[Team]) {
     for (qual, supply, demand, ratio) in bottlenecks {
         let status = if ratio < 1.0 {
             "❌ SHORTAGE"
-        } else if ratio < 1.2 {
+        } else if ratio < 1.3 {
             "⚠️  TIGHT"
         } else {
             "✅ OK"
         };
         
-        println!("{:15} {:3} / {:3} = {:.2}  {}", 
-            qual, supply, demand, ratio, status);
+        println!("{qual:15} {supply:3} / {demand:3} = {ratio:.2}  {status}");
     }
 }
 
@@ -288,11 +271,11 @@ fn value_to_colorize_8bit(value: f32, max_value: f32) -> String {
         n if n <= 0.6 => 220,  // Gold
         n if n <= 0.7 => 214,  // Orange
         n if n <= 0.8 => 208,  // Dark orange
-        n if n <= 0.9 => 202,  // Red-orange
+        n if n <= 0.95 => 202,  // Red-orange
         _ => 196,              // Bright red
     };
     
-    format!("\x1b[38;5;{}m", color_code)
+    format!("\x1b[38;5;{color_code}m")
 }
 
 fn print_results(plan: &AssignmentPlan, teams: &[Team]) {
@@ -314,7 +297,7 @@ fn print_results(plan: &AssignmentPlan, teams: &[Team]) {
         if let Some(assignments) = team_assignments {
             for assignment in assignments {
                 let color = value_to_colorize_8bit(assignment.score as f32, 30000.0);
-                println!("{}  {}({}) as {}\x1b[0m", color, assignment.person_name, assignment.score, assignment.qualification);
+                println!("{}  {} ({}) as {}\x1b[0m", color, assignment.person_name, assignment.score, assignment.qualification);
                 //println!("  {} as {}", assignment.person_name, assignment.qualification);
                 *filled_positions.entry(assignment.qualification.clone()).or_default() += 1;
             }
@@ -333,13 +316,13 @@ fn print_results(plan: &AssignmentPlan, teams: &[Team]) {
     if !plan.unfilled_positions.is_empty() {
         println!("\n=== Critical Unfilled Positions ===");
         for (team, qual) in &plan.unfilled_positions {
-            println!("  {} needs {}", team, qual);
+            println!("  {team} needs {qual}");
         }
     }
     
     println!("\n=== Unassigned Personnel ({}) ===", plan.unassigned_people.len());
     for person in &plan.unassigned_people {
-        println!("  {}", person);
+        println!("  {person}");
     }
 }
 
@@ -386,7 +369,7 @@ fn load_people_from_csv(path: &Path) -> Result<Vec<Person>, GenericError> {
             .and_then(|date_str| NaiveDate::parse_from_str(date_str, "%Y-%m-%d").ok()),
       };
 
-      people.push(person)
+      people.push(person);
     }
 
     Ok(people)
@@ -397,32 +380,32 @@ fn save_assignments_to_csv(assignments: &AssignmentPlan, path: &Path) -> Result<
 
     let mut writer = Writer::from_path(path)?;
 
-    writer.write_record(&["Assigned People", "", ""])?;
-    writer.write_record(&["Person", "Team", "Qualification"])?;
+    writer.write_record(["Assigned People", "", ""])?;
+    writer.write_record(["Person", "Team", "Qualification"])?;
 
     for assignment in &assignments.assignments {
-        writer.write_record(&[
+        writer.write_record([
             &assignment.person_name,
             &assignment.team_name,
             &assignment.qualification,
         ])?;
     }
 
-    writer.write_record(&["Vacant Positions", "", ""])?;
-    writer.write_record(&["Person", "Team", "Qualification"])?;
+    writer.write_record(["Vacant Positions", "", ""])?;
+    writer.write_record(["Person", "Team", "Qualification"])?;
     for (team, qual) in &assignments.unfilled_positions {
-        writer.write_record(&[
+        writer.write_record([
             "",
-            &team,
-            &qual,
+            team,
+            qual,
         ])?;
     }
 
-    writer.write_record(&["Unassigned People", "", ""])?;
-    writer.write_record(&["Person", "Team", "Qualification"])?;
+    writer.write_record(["Unassigned People", "", ""])?;
+    writer.write_record(["Person", "Team", "Qualification"])?;
     for person in &assignments.unassigned_people {
-        writer.write_record(&[
-            &person,
+        writer.write_record([
+            person,
             "",
             "",
         ])?;
@@ -458,9 +441,7 @@ fn get_qual_demand(teams: &[Team]) -> HashMap<String, usize> {
 
 fn main() {
 
-    // println!("Running parse test...");
-    //let _ = asm_parser::generate_people().expect("Error loading ASM and FLTMPS files...");
-    // println!("Parse test ran...");
+    asm_parser::generate_people().expect("Error loading ASM and FLTMPS files...");
 
     let start = Instant::now();
     let duration = start.elapsed();
@@ -475,15 +456,13 @@ fn main() {
         ||    match load_people_from_csv(people_path) {
         Ok(value) => people = value,
         Err(e) => {
-            eprintln!("Error loading people: {}", e);
-            return;
+            eprintln!("Error loading people: {e}");
         }
     },
         ||     match load_teams_from_csv(team_path) {
         Ok(value) => teams = value,
         Err(e) => {
-            eprintln!("Error loading teams: {}", e);
-            return;
+            eprintln!("Error loading teams: {e}");
         }
     }
     );
@@ -503,7 +482,7 @@ fn main() {
 
     // Save results to CSV. Gotta adjust to account for new AssignmentResults struct
     if let Err(e) = save_assignments_to_csv(&assignments, Path::new("data/assignments.csv")) {
-        eprintln!("Error saving assignments: {}", e);
+        eprintln!("Error saving assignments: {e}");
     }
-    println!("Completion Time (Manning Allocation): {:?}", duration);
+    println!("Completion Time (Manning Allocation): {duration:?}");
 }
