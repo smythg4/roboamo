@@ -335,7 +335,7 @@ fn main() -> Result<(), GenericError> {
     let start = Instant::now();
 
     use rusqlite::Connection;
-    let path = "test.db";
+    let path = "data/test.db";
     let conn = Connection::open(path)
             .map_err(|e| format!("Failed to open database: '{}': {}", path, e))?;
 
