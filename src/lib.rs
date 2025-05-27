@@ -1,6 +1,8 @@
 
 pub mod things {
     use chrono::NaiveDate;
+    use std::fmt::{Display, Formatter};
+
     // you can do better than this, but it works for now
     pub type GenericError = Box<dyn std::error::Error + Send + Sync + 'static>;
 
@@ -18,25 +20,40 @@ pub mod things {
         pub count: usize,
     }
 
-    #[derive(Debug, Clone)]
-    pub struct Assignment {
-        pub person_name: String,
+    #[derive(Debug)]
+    pub struct Assignment<'a> {
+        pub person: &'a Person,
         pub team_name: String,
         pub qualification: String,
         pub score: i32,
     }
 
-    #[derive(Debug, Clone)]
-    pub struct AssignmentPlan {
-        pub assignments: Vec<Assignment>,
+    #[derive(Debug)]
+    pub struct AssignmentPlan<'a> {
+        pub assignments: Vec<Assignment<'a>>,
         pub unfilled_positions: Vec<(String, String)>, // (team, qual)
-        pub unassigned_people: Vec<String>,
+        pub unassigned_people: Vec<&'a Person>,
     }
 
     #[derive(Debug, Clone, PartialEq)]
     pub enum DutyStatus {
         TAR,
         SELRES,
+    }
+
+    impl DutyStatus {
+        pub fn as_str(&self) -> &'static str {
+            match self {
+                DutyStatus::TAR => "TAR",
+                DutyStatus::SELRES => "SELRES",
+            }
+        }
+    }
+
+    impl Display for DutyStatus {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "{}", self.as_str())
+        }
     }
 
     impl From<&str> for DutyStatus {
@@ -47,24 +64,6 @@ pub mod things {
             }
         }
     }
-
-    impl From<DutyStatus> for String {
-        fn from(other: DutyStatus) -> Self {
-            match other {
-                DutyStatus::SELRES => "SELRES".to_string(),
-                DutyStatus::TAR => "TAR".to_string()
-            }
-        }
-    }
-
-    // impl Into<String> for DutyStatus {
-    //     fn into(self) -> String {
-    //         match self {
-    //             DutyStatus::SELRES => "SELRES".to_string(),
-    //             DutyStatus::TAR => "TAR".to_string()
-    //         }
-    //     }
-    // }
 
     #[derive(Debug, Clone)]
     pub struct Person {
@@ -95,6 +94,16 @@ pub mod things {
 
         pub fn get_prd(&self) -> &Option<NaiveDate> {
             &self.prd
+        }
+    }
+
+    impl Display for Person {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            let prd = match self.prd {
+                Some(date) => &format!(" - {}", date),
+                None => "",
+            };
+            write!(f, "({}{}): {} ({})", self.duty_status, prd, self.name, self.raterank)
         }
     }
 }

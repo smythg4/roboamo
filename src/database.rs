@@ -27,7 +27,7 @@ pub fn create_people_table(path: &str) -> Result<Connection> {
 
 pub fn insert_person_to_db(conn: &Connection, person: &Person) -> Result<()> {
     let quals = person.get_quals().join(",");
-    let duty_status = String::from(person.get_duty_status().clone());
+    let duty_status = person.get_duty_status().as_str();
     conn.execute(
         "INSERT INTO person (name, raterank, duty_status, qualifications, prd)
             VALUES (?1, ?2, ?3, ?4, ?5)",
@@ -36,10 +36,21 @@ pub fn insert_person_to_db(conn: &Connection, person: &Person) -> Result<()> {
     Ok(())
 }
 
-pub fn insert_people_to_db(conn: &Connection, people: &Vec<Person>) -> Result<()> {
+pub fn insert_people_to_db(conn: &mut Connection, people: &Vec<Person>) -> Result<()> {
+    let tx = conn.transaction()?;
+    let mut stmt = tx.prepare(
+        "INSERT INTO person (name, raterank, duty_status, qualifications, prd)
+         VALUES (?1, ?2, ?3, ?4, ?5)"
+    )?;
+    
     for person in people {
-        insert_person_to_db(conn, person)?;
+        let quals = person.get_quals().join(",");
+        let duty_status = person.get_duty_status().as_str();
+        stmt.execute((person.get_name(), person.get_raterank(), duty_status, quals, person.get_prd()))?;
     }
+    
+    stmt.finalize()?;
+    tx.commit()?;
     Ok(())
 }
 
@@ -47,7 +58,7 @@ pub fn fetch_people(conn: &Connection) -> Result<Vec<Person>> {
     let mut result = Vec::new();
     let mut stmt = conn.prepare("SELECT * FROM person")?;
     let person_iter = stmt.query_map([], |row| {
-        let duty_status_str: String = row.get(3).unwrap();
+        let duty_status_str: String = row.get(3)?;
         let duty_status = DutyStatus::from(&duty_status_str[..]);
         let qual_str: String = row.get(4)?;
         let qualifications: Vec<String> = qual_str.split(',').map(|s| s.to_string()).collect();
@@ -97,9 +108,9 @@ mod test {
     fn asm_parse_to_db() {
         let path = "test.db";
         reset_db(path).unwrap();
-        let conn = create_people_table(path).unwrap();
-        let people = asm_parser::make_people_complete();
-        insert_people_to_db(&conn, &people).unwrap();
+        let mut conn = create_people_table(path).unwrap();
+        let people = asm_parser::make_people_complete().unwrap();
+        insert_people_to_db(&mut conn, &people).unwrap();
 
         match fetch_people(&conn) {
             Ok(peeps) => println!("{:?}", peeps),

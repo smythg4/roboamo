@@ -2,16 +2,30 @@
 use std::{collections::{HashMap,HashSet, VecDeque}, path::Path};
 use std::time::Instant;
 use chrono::NaiveDate;
+use clap::Parser;
 
 use roboamo::{asm_parser::make_people_complete, database::fetch_people, things::*};
 use roboamo::csv_funcs::*;
-use roboamo::database::{create_people_table, insert_people_to_db};
+use roboamo::database::{create_people_table, insert_people_to_db, reset_db};
+
+#[derive(Parser)]
+#[command(name = "roboamo")]
+#[command(about = "A CLI manpower optimazation tool.")]
+struct Args {
+    /// update the database (add ability to add filepaths)
+    #[arg(short = 'u', long = "update")]
+    update: bool,
+
+    /// input files to process
+    #[arg(short = 'f', long = "files", value_name = "FILE")]
+    files: Vec<String>,
+}
 
 fn calc_person_score(
     person: &Person,
     current_qual: &str,
     high_demand_quals: &HashSet<String>,
-    remaining_positions: &VecDeque<(Team, String)>,
+    remaining_positions: &VecDeque<(String, String)>,
     all_people: &[Person],
     current_date: NaiveDate,
 ) -> i32 {
@@ -71,7 +85,7 @@ fn find_best_available_person<'a>(
     assigned_people: &HashSet<String>,
     all_people: &'a [Person],
     high_demand_quals: &HashSet<String>,
-    remaining_positions: &VecDeque<(Team, String)>
+    remaining_positions: &VecDeque<(String, String)>
 ) -> Option<(&'a Person, i32)> {
     if let Some(candidates) = qual_supply.get(qual) {
         let available_candidates: Vec<_> = candidates.iter()
@@ -99,11 +113,11 @@ fn find_best_available_person<'a>(
     }
 }
 
-fn assign_teams(
-    people: &[Person],
+fn assign_teams<'a>(
+    people: &'a [Person],
     teams: &[Team],
     high_demand_quals: &HashSet<String>
-) -> AssignmentPlan {
+) -> AssignmentPlan<'a> {
     let qual_supply = get_qual_supply(people);
     let qual_demand = get_qual_demand(teams);
 
@@ -116,14 +130,14 @@ fn assign_teams(
 
     qual_criticality.sort_by(|a,b| a.1.partial_cmp(&b.1).unwrap());
 
-    let mut positions_queue = VecDeque::new();
+    let mut positions_queue: VecDeque<(String,String)> = VecDeque::new();
 
     for (qual, _ratio) in &qual_criticality {
         for team in teams {
             for position in &team.required_positions {
                 if &position.qualification == qual {
                     for _ in 0..position.count {
-                        positions_queue.push_back((team.clone(), qual.clone()));
+                        positions_queue.push_back((team.name.clone(), qual.clone()));
                     }
                 }
             }
@@ -134,7 +148,7 @@ fn assign_teams(
     let mut assigned_people = HashSet::new();
     let mut unfilled_positions = Vec::new();
 
-    while let Some((team, qual)) = positions_queue.pop_front() {
+    while let Some((team_name, qual)) = positions_queue.pop_front() {
         if let Some((best_person, score)) = find_best_available_person(
             &qual,
             &qual_supply,
@@ -145,13 +159,13 @@ fn assign_teams(
         ) {
             assigned_people.insert(best_person.name.clone());
             assignments.push(Assignment {
-                person_name: best_person.name.clone(),
-                team_name: team.name.clone(),
+                person: best_person,
+                team_name: team_name.clone(),
                 qualification: qual.clone(),
                 score,
             });
         } else {
-            unfilled_positions.push((team.name.clone(), qual.clone()));
+            unfilled_positions.push((team_name.clone(), qual.clone()));
         }
     }
 
@@ -160,7 +174,7 @@ fn assign_teams(
             if !assigned_people.contains(&person.name) && person.qualifications.contains(qual) {
                 assigned_people.insert(person.name.clone());
                 assignments.push( Assignment {
-                    person_name: person.name.clone(),
+                    person,
                     team_name: team_name.clone(),
                     qualification: qual.clone(),
                     score: 0,
@@ -170,9 +184,8 @@ fn assign_teams(
         }
     }
 
-    let unassigned_people: Vec<String> = people.iter()
+    let unassigned_people: Vec<&Person> = people.iter()
         .filter(|p| !assigned_people.contains(&p.name))
-        .map(|p| format!("{} ({}) - {:?}", p.name, p.raterank, p.qualifications))
         .collect();
 
     AssignmentPlan {
@@ -251,9 +264,8 @@ fn print_results(plan: &AssignmentPlan, teams: &[Team]) {
         
         if let Some(assignments) = team_assignments {
             for assignment in assignments {
-                let color = value_to_colorize_8bit(assignment.score as f32, 30000.0);
-                println!("{}  {} ({}) as {}\x1b[0m", color, assignment.person_name, assignment.score, assignment.qualification);
-                //println!("  {} as {}", assignment.person_name, assignment.qualification);
+                let color = value_to_colorize_8bit(assignment.score as f32, 20000.0);
+                println!("{}  {} ({}) as {}\x1b[0m", color, assignment.person, assignment.score, assignment.qualification);
                 *filled_positions.entry(assignment.qualification.clone()).or_default() += 1;
             }
         }
@@ -276,8 +288,17 @@ fn print_results(plan: &AssignmentPlan, teams: &[Team]) {
     }
     
     println!("\n=== Unassigned Personnel ({}) ===", plan.unassigned_people.len());
-    for person in &plan.unassigned_people {
-        println!("  {person}");
+    let (mut tar, mut selres): (Vec<&Person>,Vec<&Person>) = plan.unassigned_people.iter().partition(|p| p.duty_status == DutyStatus::TAR);
+    let sort_key = |p: &&Person| std::cmp::Reverse(p.qualifications.len());
+    tar.sort_by_key(sort_key);
+    selres.sort_by_key(sort_key);
+    for person in tar {
+        let quals = person.get_quals().join(", ");
+        println!("  {person} - {quals}");
+    }
+    for person in selres {
+        let quals = person.get_quals().join(", ");
+        println!("  {person} - {quals}");
     }
 }
 
@@ -304,28 +325,31 @@ fn get_qual_demand(teams: &[Team]) -> HashMap<String, usize> {
     result
 }
 
-fn main() {
+fn main() -> Result<(), GenericError> {
     let start = Instant::now();
-    let duration = start.elapsed();
 
-    // let people_path = Path::new("data/people.csv");
-    // let people = load_people_from_csv(people_path).unwrap();
     use rusqlite::Connection;
     let path = "test.db";
-    let conn = Connection::open(path).unwrap();
+    let conn = Connection::open(path)
+            .map_err(|e| format!("Failed to open database: '{}': {}", path, e))?;
 
-    let update_db_huh = false;
-    if update_db_huh {
-        let conn = create_people_table(path).unwrap();
-        let people = make_people_complete();
-        insert_people_to_db(&conn, &people).unwrap();
+    let args = Args::parse();
+
+    if args.update {
+        println!("Updating the database...");
+        reset_db(path).unwrap();
+        let mut conn = create_people_table(path).unwrap();
+        let people = make_people_complete()
+                .map_err(|e| format!("Failed to parse personnel data: {}", e))?;
+        insert_people_to_db(&mut conn, &people).unwrap();
     }
-    
-    //reset_db("test.db").unwrap();
-    let people = fetch_people(&conn).unwrap();
+
+    let people = fetch_people(&conn)
+            .map_err(|e| format!("Failed to fetch people from the database: {}", e))?;
 
     let team_path = Path::new("data/teams.csv");
-    let teams = load_teams_from_csv(team_path).unwrap();
+    let teams = load_teams_from_csv(team_path)
+            .map_err(|e| format!("Failed to load teams from {:?}: {}", team_path, e))?;
 
     analyze_bottlenecks(&people, &teams);
 
@@ -344,5 +368,8 @@ fn main() {
     if let Err(e) = save_assignments_to_csv(&assignments, Path::new("data/assignments.csv")) {
         eprintln!("Error saving assignments: {e}");
     }
+    let duration = start.elapsed();
     println!("Completion Time (Manning Allocation): {duration:?}");
+
+    Ok(())
 }

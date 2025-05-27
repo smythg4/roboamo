@@ -9,9 +9,13 @@ pub fn load_teams_from_csv(path: &Path) -> Result<Vec<Team>, GenericError> {
 
     for result in reader.records() {
         let record = result?;
-        let team_name = record.get(0).unwrap().to_string();
-        let qualification = record.get(1).unwrap().to_string();
-        let count: usize = record.get(2).unwrap().parse()?;
+        let team_name = record.get(0)
+                .ok_or("Missing team name in column 0")?.to_string();
+        let qualification = record.get(1)
+                .ok_or("Missing qualification in column 1")?.to_string();
+        let count: usize = record.get(2)
+                .ok_or("Missing count in column 2")?
+                .parse().map_err(|e| format!("Invalid count value: {}", e))?;
 
         let team = teams_map.entry(team_name.clone()).or_insert( Team {
             name: team_name,
@@ -62,7 +66,7 @@ pub fn save_assignments_to_csv(assignments: &AssignmentPlan, path: &Path) -> Res
 
     for assignment in &assignments.assignments {
         writer.write_record([
-            &assignment.person_name,
+            assignment.person.get_name(),
             &assignment.team_name,
             &assignment.qualification,
         ])?;
@@ -82,7 +86,7 @@ pub fn save_assignments_to_csv(assignments: &AssignmentPlan, path: &Path) -> Res
     writer.write_record(["Person", "Team", "Qualification"])?;
     for person in &assignments.unassigned_people {
         writer.write_record([
-            person,
+            person.get_name(),
             "",
             "",
         ])?;
