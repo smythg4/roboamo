@@ -1,8 +1,12 @@
 use calamine::{Reader, open_workbook, Xlsx, Data};
 use regex::Regex;
 use std::path::Path;
+
 use std::collections::HashMap;
 use std::time::Instant;
+
+use crate::things::{DutyStatus, Person};
+use crate::csv_funcs::write_asm_to_csv;
 
 fn get_qual_table(path: &Path) -> HashMap<String, String> {
     let mut qual_table: HashMap<String, String> = HashMap::new();
@@ -165,31 +169,29 @@ fn add_derivative_quals(people_quals: &mut HashMap<String, Vec<String>>) {
 
 }
 
-fn write_to_csv(path: &Path, people_quals: &HashMap<String, Vec<String>>) -> Result<(), std::io::Error> {
-    use csv::Writer;
-
-    let mut writer = Writer::from_path(path)?;
-    writer.write_record(["Name", "RateRank", "Status", "PRD", "QualificationsList"])?;
-    //Name	RateRank	Status	PRD	QualificationsList
+fn make_people_vec(people_quals: HashMap<String, Vec<String>>) -> Vec<Person> {
+    let mut people = Vec::new();
 
     for (name, quals) in people_quals {
         let nameparts: Vec<&str> = name.split("  ").collect();
         let name = *nameparts.first().unwrap();
         let raterank = *nameparts.get(1).unwrap();
-        let qual_str = quals.join(", ");
-
-        writer.write_record([
-            name,
-            raterank,
-            "TAR",
-            "",
-            &qual_str,
-        ])?;
+        people.push(Person {
+            name: name.to_string(),
+            raterank: raterank.to_string(),
+            duty_status: DutyStatus::TAR,
+            qualifications: quals,
+            prd: None, 
+        })
     }
+    people
+}
 
-    writer.flush()?;
+pub fn make_people_complete() -> Vec<Person> {
+    let mut people_quals = parse_asm_file().unwrap();
+    add_derivative_quals(&mut people_quals);
 
-    Ok(())
+    make_people_vec(people_quals)
 }
 
 pub fn generate_people() -> Result<(), Box<dyn std::error::Error>> {
@@ -199,7 +201,30 @@ pub fn generate_people() -> Result<(), Box<dyn std::error::Error>> {
     add_derivative_quals(&mut people_quals);
 
     let people_path = Path::new("data/people.csv");
-    write_to_csv(people_path, &people_quals)?;
+    write_asm_to_csv(people_path, &people_quals)?;
     println!("Completion Time (ASM Parsing): {duration:?}");
     Ok(())
 }
+
+#[cfg(test)]
+mod parser_tests {
+    use super::{add_derivative_quals, make_people_vec, parse_asm_file};
+
+    #[test]
+    fn people_vec() {
+        let mut people_quals = parse_asm_file().unwrap();
+        add_derivative_quals(&mut people_quals);
+
+        let my_folks = make_people_vec(people_quals);
+        for person in &my_folks {
+            println!("Name: {}, RateRank: {}, Status: {}, PRD: {:?}, Quals: {:?}", 
+            person.get_name(), 
+            person.get_raterank(),
+            String::from(person.get_duty_status().clone()),
+            person.get_prd(), 
+            person.get_quals());
+        }
+        assert!(my_folks.len() > 0);
+    }
+}
+
