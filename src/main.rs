@@ -302,6 +302,12 @@ fn print_results(plan: &AssignmentPlan, teams: &[Team]) {
     }
 }
 
+fn _print_results_simple(plan: &AssignmentPlan, _teams: &[Team]) {
+    // used for benchmarking purposes compared to full display
+    println!("Assignments: {}", plan.assignments.len());
+    println!("Unfilled: {}", plan.unfilled_positions.len());
+    println!("Unassigned: {}", plan.unassigned_people.len());
+}
 
 fn get_qual_supply(people: &[Person]) -> HashMap<String, Vec<&Person>> {
     let mut result : HashMap<String, Vec<&Person>> = HashMap::new();
@@ -362,6 +368,7 @@ fn main() -> Result<(), GenericError> {
 
     let assignments = assign_teams(&people, &teams, &high_demand_quals);
 
+    //print_results_simple(&assignments, &teams);
     print_results(&assignments, &teams);
 
     // Save results to CSV. Gotta adjust to account for new AssignmentResults struct

@@ -42,28 +42,28 @@ pub fn insert_people_to_db(conn: &mut Connection, people: &Vec<Person>) -> Resul
         "INSERT INTO person (name, raterank, duty_status, qualifications, prd)
          VALUES (?1, ?2, ?3, ?4, ?5)"
     )?;
-    
+    println!("Populating members into database...");
     for person in people {
         let quals = person.get_quals().join(",");
         let duty_status = person.get_duty_status().as_str();
         stmt.execute((person.get_name(), person.get_raterank(), duty_status, quals, person.get_prd()))?;
     }
-    
     stmt.finalize()?;
     tx.commit()?;
+        println!("Database population complete.");
     Ok(())
 }
 
 pub fn fetch_people(conn: &Connection) -> Result<Vec<Person>> {
     let mut result = Vec::new();
     let mut stmt = conn.prepare("SELECT * FROM person")?;
+    println!("Importing members from database...");
     let person_iter = stmt.query_map([], |row| {
         let duty_status_str: String = row.get(3)?;
         let duty_status = DutyStatus::from(&duty_status_str[..]);
         let qual_str: String = row.get(4)?;
         let qualifications: Vec<String> = qual_str.split(',').map(|s| s.to_string()).collect();
         Ok(Person {
-            //id: row.get(0)?,
             name: row.get(1)?,
             raterank: row.get(2)?,
             duty_status,
@@ -74,6 +74,7 @@ pub fn fetch_people(conn: &Connection) -> Result<Vec<Person>> {
     for person in person_iter.flatten() {
         result.push(person);
     }
+    println!("Member import complete. {} members imported.", result.len());
     Ok(result)
 }
 
