@@ -11,3 +11,14 @@
 - look at logic for updating database in the event that file was deleted
 - update parsing strategy for ASM names (right now depends on '  ' before rate). Can use regex for better matches.
 - need to do a better job cleaning strings for random characters ( , : etc)
+
+
+
+## 🤝 Contributing
+
+### Clone the repo
+
+```bash
+git clone https://github.com/smythg4/roboamo@latest
+cd roboamo
+```
