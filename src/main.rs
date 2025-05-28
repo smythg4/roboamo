@@ -42,7 +42,9 @@ fn calc_person_score(
     if let Some(prd) = person.prd {
         let days_remaining = (prd - current_date).num_days();
 
-        if days_remaining < 90 {
+        if days_remaining < 0 {
+            score += 20_000
+        } else if days_remaining < 90 {
             score += 5_000;
         } else if days_remaining < 180 {
             score += 2_000;
@@ -73,7 +75,7 @@ fn calc_person_score(
     }
 
     if !high_demand_quals.contains(current_qual) && person.qualifications.iter().any(|q| high_demand_quals.contains(q)) {
-            score += 100;
+            score += 500;
     }
 
     score
@@ -85,7 +87,7 @@ fn find_best_available_person<'a>(
     assigned_people: &HashSet<String>,
     all_people: &'a [Person],
     high_demand_quals: &HashSet<String>,
-    remaining_positions: &VecDeque<(String, String)>
+    remaining_positions: &VecDeque<(String, String)>,
 ) -> Option<(&'a Person, i32)> {
     if let Some(candidates) = qual_supply.get(qual) {
         let available_candidates: Vec<_> = candidates.iter()
@@ -120,6 +122,9 @@ fn assign_teams<'a>(
 ) -> AssignmentPlan<'a> {
     let qual_supply = get_qual_supply(people);
     let qual_demand = get_qual_demand(teams);
+
+    let additional_quals: Vec<_> = get_non_exclusive_quals().into_iter().map(|q| (q.0)).collect();
+    //let additional_quals: Vec<_> = get_non_exclusive_quals();
 
     let mut qual_criticality: Vec<(String, f64)> = qual_demand.iter()
         .map(|(qual, demand)| {
@@ -158,10 +163,12 @@ fn assign_teams<'a>(
             &positions_queue,
         ) {
             assigned_people.insert(best_person.name.clone());
-            assignments.push(Assignment {
+            assignments.push( Assignment {
                 person: best_person,
                 team_name: team_name.clone(),
                 qualification: qual.clone(),
+                optional_quals: best_person.get_quals().iter()
+                        .filter(|q| additional_quals.iter().collect::<Vec<_>>().contains(q)).collect(),
                 score,
             });
         } else {
@@ -177,6 +184,8 @@ fn assign_teams<'a>(
                     person,
                     team_name: team_name.clone(),
                     qualification: qual.clone(),
+                    optional_quals: person.get_quals().iter()
+                        .filter(|q| additional_quals.iter().collect::<Vec<_>>().contains(q)).collect(),
                     score: 0,
                 });
                 break;
@@ -265,7 +274,8 @@ fn print_results(plan: &AssignmentPlan, teams: &[Team]) {
         if let Some(assignments) = team_assignments {
             for assignment in assignments {
                 let color = value_to_colorize_8bit(assignment.score as f32, 20000.0);
-                println!("{}  {} ({}) as {}\x1b[0m", color, assignment.person, assignment.score, assignment.qualification);
+                //println!("{}  {} ({}) as {} ({:?})\x1b[0m", color, assignment.person, assignment.score, assignment.qualification, assignment.optional_quals);
+                println!("{}{}\x1b[0m", color, assignment);
                 *filled_positions.entry(assignment.qualification.clone()).or_default() += 1;
             }
         }
@@ -329,6 +339,10 @@ fn get_qual_demand(teams: &[Team]) -> HashMap<String, usize> {
         }
     }
     result
+}
+
+fn get_non_exclusive_quals() -> Vec<(String, usize)> {
+    vec![("EIRV Driver".to_string(), 1),]
 }
 
 fn main() -> Result<(), GenericError> {

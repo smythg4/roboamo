@@ -1,3 +1,4 @@
+use chrono::NaiveDate;
 use rusqlite::{Connection, Result};
 use crate::things::*;
 use std::fs;
@@ -72,7 +73,9 @@ pub fn fetch_people(conn: &Connection) -> Result<Vec<Person>> {
         })
     })?;
     for person in person_iter.flatten() {
-        result.push(person);
+        if person.prd.unwrap_or(NaiveDate::from_ymd_opt(2030, 12, 31).unwrap()) >= CURRENT_DATE {
+            result.push(person);
+        }
     }
     println!("Member import complete. {} members imported.", result.len());
     Ok(result)

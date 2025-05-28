@@ -140,7 +140,6 @@ fn parse_fltmps_file() -> Result<HashMap<String, Option<NaiveDate>>,GenericError
                     None
                 }
             };
-            //println!("Name: {:?}, PRD {:?}", name, prd);
             prds.insert(name, prd);
         }
     }
@@ -162,7 +161,7 @@ fn parse_asm_file() -> Result<HashMap<String, Vec<String>>,GenericError> {
         let mut current_qual=String::new();
         for row in range.rows() {
             //let line = data_to_string(&row[0]);
-            let line = row.get(0).map(data_to_string).unwrap_or_default();
+            let line = row.first().map(data_to_string).unwrap_or_default();
             if is_supply(&line) && is_name(&line) {
                 let person = people_quals.entry(line.clone()).or_default();
                 person.push("Supply".to_string());
@@ -265,7 +264,6 @@ fn prd_lookup(name: &str, prds: &HashMap<String, Option<NaiveDate>>) -> Option<N
                     return prds[matches[0]];
                 }
             }
-            //println!("Nothing found for: {}", last_name);
     }
 
     None
@@ -282,6 +280,10 @@ fn make_people_vec(people_quals: HashMap<String, Vec<String>>, prds: HashMap<Str
                 .ok_or("Invalid name format: missing name")?
                 .trim();
         let prd = prd_lookup(name, &prds);
+        match &prd {
+            Some(date) => println!("Found PRD for {}: {}", name, date),
+            None => println!("No PRD found for {}, assuming SELRES...", name)
+        }
         let duty_status = match prd {
             Some(_) => DutyStatus::TAR,
             None => DutyStatus::SELRES,
