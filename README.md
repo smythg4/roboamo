@@ -136,16 +136,6 @@ regex - Pattern matching
 once_cell - Lazy static initialization
 rusqlite - SQLite database
 
-## Future Enhancements
-
- Command-line file path configuration
- Web UI for assignment review
- Multi-scenario comparison
- Non-exclusive qualification support
- Manual assignment overrides
- Historical tracking
-
-
 Author
 Nerd
 
