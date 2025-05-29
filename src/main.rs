@@ -10,15 +10,24 @@ use roboamo::database::{create_people_table, insert_people_to_db, reset_db};
 
 #[derive(Parser)]
 #[command(name = "roboamo")]
-#[command(about = "A CLI manpower optimazation tool.")]
+#[command(about = "A CLI manpower optimization tool.")]
 struct Args {
     /// update the database (add ability to add filepaths)
     #[arg(short = 'u', long = "update")]
     update: bool,
 
-    /// input files to process
-    #[arg(short = 'f', long = "files", value_name = "FILE")]
-    files: Vec<String>,
+    /// input qualification file to process (eg data/qualifications/PeopleMaster.xlsx)
+    #[arg(short = 'q', long = "qual-file", value_name = "QFILE", requires = "update")]
+    qfile: Option<String>,
+
+    /// input qualification translation file to process (eg data/qualdefs/qualtable.csv)
+    #[arg(short = 't', long = "qual-table-file", value_name = "QTFILE", requires = "update")]
+    qtfile: Option<String>,
+
+    /// input requirement file to process (eg data/teams/teams.csv)
+    #[arg(short = 'r', long = "req-file", value_name = "RFILE")]
+    rfile: Option<String>,
+
 }
 
 fn calc_person_score(
@@ -349,25 +358,35 @@ fn main() -> Result<(), GenericError> {
     let start = Instant::now();
 
     use rusqlite::Connection;
-    let path = "data/test.db";
-    let conn = Connection::open(path)
-            .map_err(|e| format!("Failed to open database: '{}': {}", path, e))?;
+    let db_path = "data/test.db";
 
     let args = Args::parse();
 
     if args.update {
         println!("Updating the database...");
-        reset_db(path).unwrap();
-        let mut conn = create_people_table(path).unwrap();
-        let people = make_people_complete()
+        match reset_db(db_path) {
+            Ok(_) => println!("Database at {} deleted successfully", db_path),
+            Err(e) => eprintln!("Error deleting old database at {}: {}", db_path, e)
+        };
+
+        let mut conn = create_people_table(db_path)?;
+
+        let qual_file = args.qfile.as_deref().unwrap_or("data/qualifications/PeopleMaster.xlsx");
+        let qual_trans = args.qtfile.as_deref().unwrap_or("data/qual defs/qualtable.csv");
+
+        let people = make_people_complete(qual_file, qual_trans)
                 .map_err(|e| format!("Failed to parse personnel data: {}", e))?;
         insert_people_to_db(&mut conn, &people).unwrap();
+        
     }
+
+    let conn = Connection::open(db_path)
+            .map_err(|e| format!("Failed to open database: '{}': {}", db_path, e))?;
 
     let people = fetch_people(&conn)
             .map_err(|e| format!("Failed to fetch people from the database: {}", e))?;
 
-    let team_path = Path::new("data/teams.csv");
+    let team_path = args.rfile.as_deref().unwrap_or("data/teams/teams.csv");
     let teams = load_teams_from_csv(team_path)
             .map_err(|e| format!("Failed to load teams from {:?}: {}", team_path, e))?;
 
@@ -378,7 +397,7 @@ fn main() -> Result<(), GenericError> {
     high_demand_quals.insert("MMCPO".to_string());
     high_demand_quals.insert("QAS".to_string());
     high_demand_quals.insert("SFF".to_string());
-    high_demand_quals.insert("F/A QAR".to_string());
+    high_demand_quals.insert("F/S QAR".to_string());
 
     let assignments = assign_teams(&people, &teams, &high_demand_quals);
 

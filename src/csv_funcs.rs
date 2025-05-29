@@ -3,7 +3,7 @@ use csv::Reader;
 use std::{collections::HashMap, path::Path};
 use chrono::NaiveDate;
 
-pub fn load_teams_from_csv(path: &Path) -> Result<Vec<Team>, GenericError> {
+pub fn load_teams_from_csv(path: &str) -> Result<Vec<Team>, GenericError> {
     let mut reader = Reader::from_path(path)?;
     let mut teams_map: HashMap<String, Team> = HashMap::new();
 
@@ -27,7 +27,7 @@ pub fn load_teams_from_csv(path: &Path) -> Result<Vec<Team>, GenericError> {
     Ok(teams_map.into_values().collect())
 }
 
-pub fn load_people_from_csv(path: &Path) -> Result<Vec<Person>, GenericError> {
+pub fn load_people_from_csv(path: &str) -> Result<Vec<Person>, GenericError> {
     let mut reader = Reader::from_path(path)?;
     let mut people = Vec::new();
 

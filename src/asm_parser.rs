@@ -2,7 +2,7 @@ use calamine::{Reader, open_workbook, Xlsx, Data};
 use chrono::NaiveDate;
 use regex::Regex;
 use once_cell::sync::Lazy;
-use std::path::Path;
+use std::borrow::Cow;
 
 use std::collections::HashMap;
 
@@ -34,7 +34,7 @@ static AZ_REGEX: Lazy<Regex> = Lazy::new(|| {
         .expect("Invalid AZ_REGEX pattern")
 });
 
-fn get_qual_table(path: &Path) -> Result<HashMap<String, String>, GenericError> {
+fn get_qual_table(path: &str) -> Result<HashMap<String, String>, GenericError> {
     let mut qual_table: HashMap<String, String> = HashMap::new();
     let mut reader = csv::Reader::from_path(path)?;
 
@@ -52,17 +52,17 @@ fn get_qual_table(path: &Path) -> Result<HashMap<String, String>, GenericError> 
 }
 
 /// Convert Data enum to a string safely
-pub fn data_to_string(data: &Data) -> String {
-
+pub fn data_to_string(data: &Data) -> Cow<str> {
     // using std::borrow::Cow might save me some performance in the future
     match data {
-        Data::String(s) => s.clone(),
-        Data::Float(f) => f.to_string(),
-        Data::Int(i) => i.to_string(),
-        Data::Bool(b) => b.to_string(),
-        Data::Error(e) => format!("ERROR: {e:?}"),
-        Data::DateTime(dt) => format!("{dt}"),
-        _ => String::new(),
+        Data::String(s) => Cow::Borrowed(s.as_str()),
+        Data::Float(f) => Cow::Owned(f.to_string()),
+        Data::Int(i) => Cow::Owned(i.to_string()),
+        Data::Bool(false) => Cow::Borrowed("false"),
+        Data::Bool(true) => Cow::Borrowed("true"),
+        Data::Error(e) => Cow::Owned(format!("ERROR: {e:?}")),
+        Data::DateTime(dt) => Cow::Owned(format!("{dt}")),
+        _ => Cow::Borrowed(""),
     }
 }
 
@@ -91,11 +91,11 @@ fn fltmps_prd_to_date(prd_str: &str) -> Result<NaiveDate, chrono::ParseError> {
     NaiveDate::parse_from_str(&with_day, "%d/%m/%Y")
 }
 
-fn parse_fltmps_file() -> Result<HashMap<String, Option<NaiveDate>>,GenericError> {
-    let fltmps_path = Path::new("data/PeopleMaster.xlsx");
-    println!("Attempting to open {}", fltmps_path.to_str().unwrap());
+fn parse_fltmps_file(path: &str) -> Result<HashMap<String, Option<NaiveDate>>,GenericError> {
+    let fltmps_path = path;
+    println!("Attempting to open {}", fltmps_path);
     let mut workbook: Xlsx<_> = open_workbook(fltmps_path)?;
-    println!("Success opening {}", fltmps_path.to_str().unwrap());
+    println!("Success opening {}", fltmps_path);
 
     let mut prds: HashMap<String, Option<NaiveDate>> = HashMap::new();
     let mut name_col: usize = 0;
@@ -140,30 +140,29 @@ fn parse_fltmps_file() -> Result<HashMap<String, Option<NaiveDate>>,GenericError
                     None
                 }
             };
-            prds.insert(name, prd);
+            prds.insert(name.to_string(), prd);
         }
     }
     Ok(prds)
 }
 
-fn parse_asm_file() -> Result<HashMap<String, Vec<String>>,GenericError> {
-    let asm_path = Path::new("data/PeopleMaster.xlsx");
+fn parse_asm_file(path: &str, qual_trans: &str) -> Result<HashMap<String, Vec<String>>,GenericError> {
+    let asm_path = path;
 
-    let qual_table_path = Path::new("data/qualtable.csv");
+    let qual_table_path = qual_trans;
     let qual_table = get_qual_table(qual_table_path)?;
 
     let mut workbook: Xlsx<_> = open_workbook(asm_path)?;
-    println!("Success opening {}", asm_path.to_str().unwrap());
+    println!("Success opening {}", asm_path);
 
     let mut people_quals: HashMap<String, Vec<String>> = HashMap::new();
 
     if let Ok(range) = workbook.worksheet_range("ASM Report") {
         let mut current_qual=String::new();
         for row in range.rows() {
-            //let line = data_to_string(&row[0]);
             let line = row.first().map(data_to_string).unwrap_or_default();
             if is_supply(&line) && is_name(&line) {
-                let person = people_quals.entry(line.clone()).or_default();
+                let person = people_quals.entry(line.to_string()).or_default();
                 person.push("Supply".to_string());
             }
 
@@ -172,7 +171,7 @@ fn parse_asm_file() -> Result<HashMap<String, Vec<String>>,GenericError> {
                 current_qual = qual_name.clone();
             } else if is_name(&line) {
                 if !current_qual.is_empty() {
-                    let person = people_quals.entry(line.clone()).or_default();
+                    let person = people_quals.entry(line.to_string()).or_default();
                     if !person.contains(&current_qual) {
                         println!("👤 Found name: '{line}'. Adding qual: '{current_qual}'. Other Quals: {person:?}");
                         person.push(current_qual.clone());
@@ -300,11 +299,11 @@ fn make_people_vec(people_quals: HashMap<String, Vec<String>>, prds: HashMap<Str
     Ok(people)
 }
 
-pub fn make_people_complete() -> Result<Vec<Person>, GenericError> {
-    let mut people_quals = parse_asm_file()?;
+pub fn make_people_complete(path: &str, qual_trans: &str) -> Result<Vec<Person>, GenericError> {
+    let mut people_quals = parse_asm_file(path, qual_trans)?;
     add_derivative_quals(&mut people_quals);
 
-    let prds = parse_fltmps_file()?;
+    let prds = parse_fltmps_file(path)?;
 
     make_people_vec(people_quals, prds)
 }
@@ -315,9 +314,9 @@ mod parser_tests {
 
     #[test]
     fn people_vec() {
-        let mut people_quals = parse_asm_file().unwrap();
+        let mut people_quals = parse_asm_file("data/qualifications/PeopleMaster.xlsx", "data/qual defs/qualtable.csv").unwrap();
         add_derivative_quals(&mut people_quals);
-        let prds = parse_fltmps_file().unwrap();
+        let prds = parse_fltmps_file("data/qualifications/PeopleMaster.xlsx").unwrap();
 
         let my_folks = make_people_vec(people_quals, prds).unwrap();
         for person in &my_folks {
@@ -334,7 +333,7 @@ mod parser_tests {
 
     #[test]
     fn fltmps() {
-        let prds = parse_fltmps_file().unwrap();
+        let prds = parse_fltmps_file("data/PeopleMaster.xlsx").unwrap();
         println!("{:?}", prds);
     }
 }

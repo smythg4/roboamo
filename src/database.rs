@@ -113,7 +113,7 @@ mod test {
         let path = "test.db";
         reset_db(path).unwrap();
         let mut conn = create_people_table(path).unwrap();
-        let people = asm_parser::make_people_complete().unwrap();
+        let people = asm_parser::make_people_complete("data/qualifications/PeopleMaster.xlsx", "data/qual defs/qualtable.csv").unwrap();
         insert_people_to_db(&mut conn, &people).unwrap();
 
         match fetch_people(&conn) {

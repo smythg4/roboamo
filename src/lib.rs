@@ -31,13 +31,12 @@ pub mod things {
 
     impl<'a> Display for Assignment<'a> {
         fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-            let add_quals: String;
-            if self.optional_quals.is_empty() {
-                add_quals = "".to_string();
+            let add_quals: String = if self.optional_quals.is_empty() {
+                 "".to_string()
             } else {
-                add_quals = format!(" - [{}]", 
-                    self.optional_quals.iter().fold(String::from(""),|acc,q| acc + q));
-            }
+                format!(" - [{}]", 
+                    self.optional_quals.iter().fold(String::from(""),|acc,q| acc + q))
+            };
             write!(f, "<{}> {} as {} {}", &self.score, &self.person, &self.qualification, &add_quals)
         }
     }
