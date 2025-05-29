@@ -1,19 +1,3 @@
-# RoboAMO
-## Thoughts for future:
-- Consider non-exclusive quals
-- Improve command line interface (custom file selection, custom output options)
-- Consider stand alone GUI
-- Consider web interface (who hosts it, how is IO handled)
-- Do ASM expiration dates matter? If so, just ignore them or add them to a Qual struct?
-- Add scoring for individual teams (eg Day Check is highest pri, Det 1 next, ...)
-
-## Known Bugs
-- look at logic for updating database in the event that file was deleted
-- update parsing strategy for ASM names (right now depends on '  ' before rate). Can use regex for better matches.
-- need to do a better job cleaning strings for random characters ( , : etc)
-
-
-
 # RoboAMO - Automated Military Personnel Assignment System
 A high-performance Rust application for optimizing Navy personnel assignments based on qualifications, duty status, and operational requirements. Processes entire unit manning in under 25ms.
 Overview
@@ -51,8 +35,14 @@ bash# Run assignments using existing database
 ```
 
 ### Update database from Excel files and run assignments
+To use default file paths.
 ```
 ./target/release/roboamo -u
+```
+
+To use custom filepaths, check:
+```
+./targer/release/roboamo --help
 ```
 
 ### Data Files Required
@@ -104,7 +94,7 @@ Saves detailed assignments to data/assignments.csv
 
 ### Optimizations include:
 - Lazy static regex compilation
-- Zero-copy string handling with Cow<str>
+- Zero-copy string handling with ```Cow<str>```
 - Batched database transactions
 - Efficient data structures
 
@@ -117,8 +107,8 @@ roboamo/
 │   ├── asm_parser.rs     # Excel parsing logic
 │   ├── csv_funcs.rs      # CSV I/O operations
 │   └── database.rs       # SQLite operations
-├── data/
-│   ├── PeopleMaster.xlsx # Personnel data (not in repo)
+├── data/ (not in repo)
+│   ├── PeopleMaster.xlsx # Personnel data
 │   ├── qualtable.csv     # Qualification mappings
 │   └── teams.csv         # Team requirements
 └── Cargo.toml
@@ -155,9 +145,17 @@ rusqlite - SQLite database
  Manual assignment overrides
  Historical tracking
 
-License
-[Your chosen license]
-Author
-[Your name]
 
-Built with Rust for maximum performance and reliability in personnel management operations.
+Author
+Nerd
+
+## Thoughts for future:
+- Consider non-exclusive quals
+- Consider stand alone GUI
+- Consider web interface (who hosts it, how is IO handled)
+- Do ASM expiration dates matter? If so, just ignore them or add them to a Qual struct?
+- Add scoring for individual teams (eg Day Check is highest pri, Det 1 next, ...)
+
+## Known Bugs
+- update parsing strategy for ASM names (right now depends on '  ' before rate). Can use regex for better matches.
+- need to do a better job cleaning strings for random characters ( , : etc)
