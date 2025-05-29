@@ -40,9 +40,19 @@ To use default file paths.
 ./target/release/roboamo -u
 ```
 
-To use custom filepaths, check:
+To use custom filepaths, check --help:
 ```
-./targer/release/roboamo --help
+./target/release/roboamo --help       
+A CLI manpower optimization tool.
+
+Usage: roboamo [OPTIONS]
+
+Options:
+  -u, --update                    update the database (add ability to add filepaths)
+  -q, --qual-file <QFILE>         input qualification file to process (eg data/qualifications/PeopleMaster.xlsx)
+  -t, --qual-table-file <QTFILE>  input qualification translation file to process (eg data/qualdefs/qualtable.csv)
+  -r, --req-file <RFILE>          input requirement file to process (eg data/teams/teams.csv)
+  -h, --help                      Print help
 ```
 
 ### Data Files Required
