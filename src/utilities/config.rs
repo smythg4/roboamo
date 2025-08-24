@@ -10,10 +10,11 @@ pub const PAGES: [&str; 4] = [
     "FLTMPS"];
     
 const DESCS: [&str; 4] = [
-    "Details the groups along with the qualifications and quantity of each qualification required.",
-    "A lookup table to convert ASM qualifications into common parlance.",
-    "Export from ASM (MMP) detailing squadron members and their qualifications.",
-    "FLTMPS export to look up PRDs for TAR sailors."];
+    "This file defines the set of groups used within the system, including a listing of all qualifications associated with each group and the quantity of personnel required to hold each qualification.",
+    "This lookup table provides a mapping between ASM qualification names and their equivalent descriptions used in your requirements file, allowing for easier interpretation.",
+    "This export is generated from ASM (MMP) and contains a roster of squadron personnel along with their currently held qualifications as recorded in the system.",
+    "This file is an export from FLTMPS and is used to reference Projected Rotation Dates (PRDs) for TAR sailors."
+];
 
 const PREVIEWS: [PreviewType; 4] = [
     PreviewType::Requirements,

@@ -169,7 +169,7 @@ pub fn Navbar() -> Element {
                                     }
                                     span {
                                         class: "xl:hidden",
-                                        "Generate"
+                                        "See Results"
                                     }
                                 }
                             }
