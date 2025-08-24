@@ -10,6 +10,7 @@ DEMO_SRC=assets/demo
 DEMO_DEST=$OUTPUT_DIR/assets/demo
 
 # Copy the demo directory contents
+mkdir -p "$DEMO_DEST"
 if [ -d "$DEMO_SRC" ]; then
   echo "Copying demo assets from $DEMO_SRC to $DEMO_DEST..."
   cp -r "$DEMO_SRC/"* "$DEMO_DEST/"

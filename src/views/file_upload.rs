@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use crate::utilities::{parse_asm_file, parse_fltmps_file, parse_qual_defs, parse_requirements, PreviewType, handle_result};
+use crate::utilities::{parse_asm_file, parse_fltmps_file, parse_qual_defs, parse_requirements, PreviewType};
 use crate::Route;
 use crate::components::Preview;
 use crate::utilities::config::{AppState, ParsedData};
@@ -27,7 +27,7 @@ pub fn FileUpload(page: String) -> Element {
             page_data.file_content.clone(),
             page_data.file_name.clone(),
             page_data.preview_type.clone(),
-            page_data.demo_file_path.clone(),
+            page_data.demo_file_path,
         ))
     })();
 

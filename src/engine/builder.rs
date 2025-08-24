@@ -268,10 +268,10 @@ pub fn generate_assignments() -> Result<AssignmentResult> {
     })
 }
 
-pub fn build_assignment_plan<'a>(people: &[Person], teams: &[Team], flow_assignments: &[FlowAssignment]) -> Result<AssignmentPlan, anyhow::Error> {
+pub fn build_assignment_plan(people: &[Person], teams: &[Team], flow_assignments: &[FlowAssignment]) -> Result<AssignmentPlan, anyhow::Error> {
     let assigned_names: Vec<_> = flow_assignments.iter().map(|a| &a.person_name).collect();
 
-    let (assigned_people, unassigned_people): (Vec<&Person>,Vec<&Person>) = people.iter()
+    let (_assigned_people, unassigned_people): (Vec<&Person>,Vec<&Person>) = people.iter()
         .partition(|p| assigned_names.contains( &&p.get_name().to_string() ));
 
     let mut assignments = vec![];

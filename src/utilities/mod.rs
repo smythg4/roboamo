@@ -3,6 +3,3 @@ pub use parsing::{parse_requirements, parse_qual_defs, parse_asm_file, parse_flt
 
 pub mod config;
 pub use config::{AppState, PreviewType};
-
-pub mod error_handling;
-pub use error_handling::handle_result;
