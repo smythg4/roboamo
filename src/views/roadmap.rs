@@ -1,15 +1,15 @@
-use dioxus::prelude::*;
 use crate::components::Footer;
+use dioxus::prelude::*;
 
 #[component]
 pub fn ProductRoadmap() -> Element {
     rsx! {
         div {
             class: "min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8",
-            
+
             div {
                 class: "max-w-7xl mx-auto",
-                
+
                 // Header Section
                 div {
                     class: "text-center mb-12",
@@ -22,11 +22,11 @@ pub fn ProductRoadmap() -> Element {
                         "Continuous improvements and feature development for RoboAMO"
                     }
                 }
-                
+
                 // Two Column Layout
                 div {
                     class: "grid grid-cols-1 lg:grid-cols-2 gap-8",
-                    
+
                     // Future Features Column
                     div {
                         class: "bg-white rounded-xl shadow-lg overflow-hidden",
@@ -40,7 +40,7 @@ pub fn ProductRoadmap() -> Element {
                         }
                         div {
                             class: "p-6 space-y-4",
-                            
+
                             // Template Files
                             FeatureCard {
                                 icon: "📄",
@@ -48,7 +48,7 @@ pub fn ProductRoadmap() -> Element {
                                 description: "Downloadable CSV and XSLX templates with proper formatting and examples",
                                 status: "complete"
                             }
-                            
+
                             // User Feedback
                             FeatureCard {
                                 icon: "💬",
@@ -56,7 +56,7 @@ pub fn ProductRoadmap() -> Element {
                                 description: "Built-in comment section for user suggestions and bug reports",
                                 status: "research"
                             }
-                            
+
                             // Search Function
                             FeatureCard {
                                 icon: "🔍",
@@ -64,7 +64,7 @@ pub fn ProductRoadmap() -> Element {
                                 description: "Quick search across all data to validate specific personnel",
                                 status: "research"
                             }
-                            
+
                             // In-Browser Editing
                             FeatureCard {
                                 icon: "✏️",
@@ -80,7 +80,7 @@ pub fn ProductRoadmap() -> Element {
                                 description: "Manage multiple squadrons with executive dashboard views",
                                 status: "planned"
                             }
-                            
+
                             // Trading System
                             FeatureCard {
                                 icon: "🤝",
@@ -88,7 +88,7 @@ pub fn ProductRoadmap() -> Element {
                                 description: "Propose personnel trades between commands to address shortfalls",
                                 status: "research"
                             }
-                            
+
                             // Time-based Analysis
                             FeatureCard {
                                 icon: "📅",
@@ -96,7 +96,7 @@ pub fn ProductRoadmap() -> Element {
                                 description: "Track requirements and shortfalls over time",
                                 status: "planned"
                             }
-                            
+
                             // What-if Scenarios
                             FeatureCard {
                                 icon: "🔮",
@@ -104,7 +104,7 @@ pub fn ProductRoadmap() -> Element {
                                 description: "Explore and compare multiple scenarios",
                                 status: "planned"
                             }
-                            
+
                             // Aircrew Expansion
                             FeatureCard {
                                 icon: "✈️",
@@ -114,7 +114,7 @@ pub fn ProductRoadmap() -> Element {
                             }
                         }
                     }
-                    
+
                     // Known Issues Column
                     div {
                         class: "bg-white rounded-xl shadow-lg overflow-hidden",
@@ -128,35 +128,35 @@ pub fn ProductRoadmap() -> Element {
                         }
                         div {
                             class: "p-6 space-y-4",
-                            
+
                             IssueCard {
                                 severity: "medium",
                                 title: "TAR/SELRES Classification",
                                 description: "FLTMPS alpha roster may not be the most reliable source for duty status determination",
                                 workaround: "Manual verification recommended for critical assignments"
                             }
-                            
+
                             IssueCard {
                                 severity: "medium",
                                 title: "Qualification Standards",
                                 description: "Need definitive rules for standard qualification definitions (100 CDI, 040 SUP, etc.)",
                                 workaround: "Get wing validated standard definitions"
                             }
-                            
+
                             IssueCard {
                                 severity: "low",
                                 title: "Duplicate Qualifications",
                                 description: "Some personnel show duplicate qualification entries",
                                 workaround: "Duplicates are automatically filtered in final output"
                             }
-                            
+
                             IssueCard {
                                 severity: "medium",
                                 title: "Expiration Dates",
                                 description: "System doesn't currently track qualification expiration dates",
                                 workaround: "Ensure all uploaded data reflects current qualifications only"
                             }
-                            
+
                             IssueCard {
                                 severity: "low",
                                 title: "FLTMPS Parsing Artifacts",
@@ -166,7 +166,7 @@ pub fn ProductRoadmap() -> Element {
                         }
                     }
                 }
-                
+
                 // // Timeline Section
                 // div {
                 //     class: "mt-12 bg-white rounded-xl shadow-lg p-8",
@@ -175,14 +175,14 @@ pub fn ProductRoadmap() -> Element {
                 //         span { class: "mr-3 text-3xl", "📍" }
                 //         "Development Timeline"
                 //     }
-                    
+
                 //     div {
                 //         class: "relative",
                 //         // Timeline line
                 //         div {
                 //             class: "absolute left-8 top-0 bottom-0 w-0.5 bg-gray-300"
                 //         }
-                        
+
                 //         // Timeline items
                 //         TimelineItem {
                 //             date: "Q1 2025",
@@ -190,21 +190,21 @@ pub fn ProductRoadmap() -> Element {
                 //             description: "Initial release with basic assignment generation",
                 //             completed: true
                 //         }
-                        
+
                 //         TimelineItem {
                 //             date: "Q2 2025",
                 //             title: "Enhanced Editing",
                 //             description: "In-browser data editing and validation",
                 //             completed: false
                 //         }
-                        
+
                 //         TimelineItem {
                 //             date: "Q3 2025",
                 //             title: "Multi-Squadron",
                 //             description: "Support for multiple squadrons and dashboard views",
                 //             completed: false
                 //         }
-                        
+
                 //         TimelineItem {
                 //             date: "Q4 2025",
                 //             title: "Advanced Analytics",
@@ -213,7 +213,7 @@ pub fn ProductRoadmap() -> Element {
                 //         }
                 //     }
                 // }
-                
+
                 // // Contact Section
                 // div {
                 //     class: "mt-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-8 text-center",
@@ -237,21 +237,26 @@ pub fn ProductRoadmap() -> Element {
 }
 
 #[component]
-fn FeatureCard(icon: &'static str, title: &'static str, description: &'static str, status: &'static str) -> Element {
+fn FeatureCard(
+    icon: &'static str,
+    title: &'static str,
+    description: &'static str,
+    status: &'static str,
+) -> Element {
     let status_class = match status {
         "planned" => "bg-gray-100 text-gray-700",
         "in-progress" => "bg-blue-100 text-blue-700",
         "research" => "bg-purple-100 text-purple-700",
         _ => "bg-gray-100 text-gray-700",
     };
-    
+
     let status_label = match status {
         "planned" => "Planned",
         "in-progress" => "In Progress",
         "research" => "Research",
         _ => "Future",
     };
-    
+
     rsx! {
         div {
             class: "flex items-start space-x-3 p-4 rounded-lg hover:bg-gray-50 transition-colors",
@@ -282,21 +287,26 @@ fn FeatureCard(icon: &'static str, title: &'static str, description: &'static st
 }
 
 #[component]
-fn IssueCard(severity: &'static str, title: &'static str, description: &'static str, workaround: &'static str) -> Element {
+fn IssueCard(
+    severity: &'static str,
+    title: &'static str,
+    description: &'static str,
+    workaround: &'static str,
+) -> Element {
     let severity_class = match severity {
         "high" => "bg-red-100 text-red-700 border-red-200",
         "medium" => "bg-yellow-100 text-yellow-700 border-yellow-200",
         "low" => "bg-blue-100 text-blue-700 border-blue-200",
         _ => "bg-gray-100 text-gray-700 border-gray-200",
     };
-    
+
     let severity_icon = match severity {
         "high" => "⚠️",
         "medium" => "⚡",
         "low" => "ℹ️",
         _ => "📝",
     };
-    
+
     rsx! {
         div {
             class: format!("border-l-4 p-4 rounded-r-lg {}", severity_class),
@@ -330,13 +340,18 @@ fn IssueCard(severity: &'static str, title: &'static str, description: &'static 
 }
 
 #[component]
-fn TimelineItem(date: &'static str, title: &'static str, description: &'static str, completed: bool) -> Element {
+fn TimelineItem(
+    date: &'static str,
+    title: &'static str,
+    description: &'static str,
+    completed: bool,
+) -> Element {
     let dot_class = if completed {
         "bg-green-500"
     } else {
         "bg-gray-400"
     };
-    
+
     rsx! {
         div {
             class: "relative flex items-start mb-8",

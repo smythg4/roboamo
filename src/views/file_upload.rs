@@ -1,24 +1,28 @@
-use dioxus::prelude::*;
-use crate::utilities::{parse_asm_file, parse_fltmps_file, parse_qual_defs, parse_requirements, PreviewType};
-use crate::Route;
 use crate::components::Preview;
 use crate::utilities::config::{AppState, ParsedData};
+use crate::utilities::{
+    parse_asm_file, parse_fltmps_file, parse_qual_defs, parse_requirements, PreviewType,
+};
 use crate::views::ErrorDisplay;
+use crate::Route;
+use dioxus::prelude::*;
 
+use anyhow::{Context, Result};
 use std::rc::Rc;
-use anyhow::{Result, Context};
 
-use wasm_bindgen::{JsCast};
+use wasm_bindgen::JsCast;
 
 #[component]
 pub fn FileUpload(page: String) -> Element {
     let mut app_state = use_context::<Signal<AppState>>();
     let nav = navigator();
-    
+
     let mut error_state = use_signal(|| None::<String>);
     let page_data_result = (|| -> Result<_> {
         let app_state_read = app_state();
-        let page_data = app_state_read.files.get(&page)
+        let page_data = app_state_read
+            .files
+            .get(&page)
             .context(format!("Configuration for page '{}' not found", page))?;
         Ok((
             page_data.page_desc.clone(),
@@ -31,16 +35,17 @@ pub fn FileUpload(page: String) -> Element {
         ))
     })();
 
-    let (page_desc, file_types, next_page, file_content, file_name, preview_type, demo_path) = match page_data_result {
-        Ok(data) => data,
-        Err(e) => {
-            return rsx! {
-                ErrorDisplay {
-                    error: format!("Failed to load page configuration: {:#}", e)
-                }
-            };
-        }
-    };
+    let (page_desc, file_types, next_page, file_content, file_name, preview_type, demo_path) =
+        match page_data_result {
+            Ok(data) => data,
+            Err(e) => {
+                return rsx! {
+                    ErrorDisplay {
+                        error: format!("Failed to load page configuration: {:#}", e)
+                    }
+                };
+            }
+        };
 
     let has_file = file_content.is_some();
 
@@ -62,7 +67,7 @@ pub fn FileUpload(page: String) -> Element {
     rsx! {
         div {
             class: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8",
-            
+
             if let Some(error) = error_state() {
                 div {
                     class: "mb-4",
@@ -75,13 +80,13 @@ pub fn FileUpload(page: String) -> Element {
 
             div {
                 class: "grid grid-cols-1 lg:grid-cols-3 gap-8",
-                
+
                 // Left side - Upload section
                 div {
                     class: "lg:col-span-1",
                     div {
                         class: "bg-white rounded-xl shadow-lg p-6",
-                        
+
                         // Step indicator
                         div {
                             class: "flex items-center mb-6",
@@ -97,13 +102,13 @@ pub fn FileUpload(page: String) -> Element {
                                 }
                             }
                         }
-                        
+
                         // Description
                         p {
                             class: "text-gray-600 mb-6 leading-relaxed",
                             "{page_desc}"
                         }
-                        
+
                         // File type badge
                         div {
                             class: "mb-4",
@@ -124,14 +129,14 @@ pub fn FileUpload(page: String) -> Element {
                                     let document = window.document().unwrap();
                                     let a = document.create_element("a").unwrap()
                                         .dyn_into::<web_sys::HtmlAnchorElement>().unwrap();
-                                    
+
                                     a.set_href(demo_path);
-                                    a.set_download(&format!("demo_{}.{}", 
-                                        page_for_demo.to_lowercase().replace(" ", "_"), 
+                                    a.set_download(&format!("demo_{}.{}",
+                                        page_for_demo.to_lowercase().replace(" ", "_"),
                                         if file_types_for_demo.contains("csv") { "csv" } else { "xlsx" }
                                     ));
                                     //a.style().set_property("display", "none").unwrap();
-                                    
+
                                     document.body().unwrap().append_child(&a).unwrap();
                                     a.click();
                                     document.body().unwrap().remove_child(&a).unwrap();
@@ -187,7 +192,7 @@ pub fn FileUpload(page: String) -> Element {
                                     }
                                 }
                             }
-                            
+
                             label {
                                 r#for: "file-{page}",
                                 class: if has_file {
@@ -195,7 +200,7 @@ pub fn FileUpload(page: String) -> Element {
                                 } else {
                                     "flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-all duration-200 border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-blue-400"
                                 },
-                                
+
                                 if has_file {
                                     // File uploaded state
                                     div {
@@ -249,7 +254,7 @@ pub fn FileUpload(page: String) -> Element {
                                 }
                             }
                         }
-                        
+
                         // Status message
                         if has_file {
                             div {
@@ -272,14 +277,14 @@ pub fn FileUpload(page: String) -> Element {
                         }
                     }
                 }
-                
+
                 // Right side - Preview section
                 if has_file {
                     div {
                         class: "lg:col-span-2",
                         div {
                             class: "bg-white rounded-xl shadow-lg p-6",
-                            
+
                             // Preview header
                             div {
                                 class: "flex justify-between items-center mb-6",
@@ -293,11 +298,11 @@ pub fn FileUpload(page: String) -> Element {
                                         "Review your data before proceeding"
                                     }
                                 }
-                                
+
                                 // Action buttons
                                 div {
                                     class: "flex gap-3",
-                                    
+
                                     // Re-upload button
                                     label {
                                         r#for: "file-{page}",
@@ -316,12 +321,12 @@ pub fn FileUpload(page: String) -> Element {
                                         }
                                         "Replace File"
                                     }
-                                    
+
                                     // Confirm button
                                     button {
                                         onclick: move |_| {
                                             let page = page_for_onclick.clone();
-                                            
+
                                             if let Some(entry) = app_state.write().files.get_mut(&page) {
                                                 if let Some(file) = &entry.file_content {
                                                     let file = file.clone();
@@ -342,7 +347,7 @@ pub fn FileUpload(page: String) -> Element {
                                                     entry.parsed_data = parsed_data;
                                                 }
                                             }
-                                            
+
                                             if let Some(next) = next_page.clone() {
                                                 nav.push(Route::FileUpload { page: next });
                                             }
@@ -378,7 +383,7 @@ pub fn FileUpload(page: String) -> Element {
                                     }
                                 }
                             }
-                            
+
                             // Preview content with scroll
                             div {
                                 class: "border border-gray-200 rounded-lg overflow-hidden",

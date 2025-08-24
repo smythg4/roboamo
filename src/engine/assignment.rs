@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
-use std::fmt::{Display, Formatter};
 use crate::engine::flow_graph::FlowGraph;
-use crate::engine::person::{Person, DutyStatus};
+use crate::engine::person::{DutyStatus, Person};
 use crate::engine::team::Team;
+use std::fmt::{Display, Formatter};
 
 use std::rc::Rc;
 
@@ -33,7 +33,8 @@ pub struct AssignmentSolver {
 impl AssignmentSolver {
     pub fn new(people: &[Person], teams: &[Team]) -> Self {
         let num_people = people.len();
-        let num_roles = teams.iter()
+        let num_roles = teams
+            .iter()
             .map(|t| t.required_positions.iter().map(|p| p.count).sum::<usize>())
             .sum::<usize>();
         let num_teams = teams.len();
@@ -57,7 +58,7 @@ impl AssignmentSolver {
 
     fn build_network(&mut self, people: &[Person], teams: &[Team]) {
         let mut node_idx = 1; // source is 0
- 
+
         // person nodes
         for person in people {
             self.person_to_node.insert(person.name.clone(), node_idx);
@@ -126,11 +127,14 @@ impl AssignmentSolver {
     fn add_team_to_sink_edges(&mut self, teams: &[Team]) {
         for team in teams {
             let team_node = self.team_to_node[&team.name];
-            let team_capacity = team.required_positions.iter()
+            let team_capacity = team
+                .required_positions
+                .iter()
                 .map(|p| p.count)
                 .sum::<usize>() as i32;
 
-            self.graph.add_edge(team_node, self.sink_node, team_capacity, 0);
+            self.graph
+                .add_edge(team_node, self.sink_node, team_capacity, 0);
         }
     }
 
@@ -157,7 +161,10 @@ impl AssignmentSolver {
             cost += 10_000;
         }
 
-        if person.raterank.ends_with("C") || person.raterank.ends_with("CS") || person.raterank.ends_with("CM") {
+        if person.raterank.ends_with("C")
+            || person.raterank.ends_with("CS")
+            || person.raterank.ends_with("CM")
+        {
             cost += 5_000;
         }
 
@@ -174,7 +181,8 @@ impl AssignmentSolver {
     }
 
     pub fn solve(&mut self) -> (i32, i32) {
-        self.graph.min_cost_max_flow(self.source_node, self.sink_node)
+        self.graph
+            .min_cost_max_flow(self.source_node, self.sink_node)
     }
 
     pub fn extract_assignments(&self) -> Vec<FlowAssignment> {
@@ -241,23 +249,27 @@ pub struct FlowAssignment {
     pub qualification: String,
 }
 
-    #[derive(Debug)]
-    pub struct Assignment {
-        pub person: Rc<Person>,
-        pub team_name: String,
-        pub qualification: String,
-        pub score: i32,
-    }
+#[derive(Debug)]
+pub struct Assignment {
+    pub person: Rc<Person>,
+    pub team_name: String,
+    pub qualification: String,
+    pub score: i32,
+}
 
-    impl Display for Assignment {
-        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-            write!(f, "<{}> {} as {}", &self.score, &self.person, &self.qualification)
-        }
+impl Display for Assignment {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "<{}> {} as {}",
+            &self.score, &self.person, &self.qualification
+        )
     }
+}
 
-    #[derive(Debug)]
-    pub struct AssignmentPlan {
-        pub assignments: Vec<Assignment>,
-        pub unfilled_positions: Vec<(String, String)>,
-        pub unassigned_people: Rc<Vec<Person>>,
-    }
+#[derive(Debug)]
+pub struct AssignmentPlan {
+    pub assignments: Vec<Assignment>,
+    pub unfilled_positions: Vec<(String, String)>,
+    pub unassigned_people: Rc<Vec<Person>>,
+}

@@ -1,12 +1,12 @@
-use dioxus::prelude::*;
 use crate::Route;
+use dioxus::prelude::*;
 
 #[component]
 pub fn Hero() -> Element {
     rsx! {
         div {
             class: "hero-container min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50",
-            
+
             // Main Hero Section
             div {
                 class: "hero-header text-center py-12 md:py-20 px-4 sm:px-6 lg:px-8",
@@ -26,7 +26,7 @@ pub fn Hero() -> Element {
                     class: "hero-subtitle text-lg md:text-xl lg:text-2xl text-gray-600 max-w-3xl mx-auto mb-8 px-4 animate-slide-up-delay",
                     "Intelligent manpower analysis for Naval Aviation Maintenance"
                 }
-                
+
                 div {
                     class: "hero-cta-group flex flex-col sm:flex-row gap-4 justify-center items-center px-4",
                     Link {
@@ -41,7 +41,7 @@ pub fn Hero() -> Element {
                     }
                 }
             }
-            
+
             // Features Grid
             div {
                 class: "features-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10 relative z-10",
@@ -49,45 +49,45 @@ pub fn Hero() -> Element {
                     class: "feature-card bg-white rounded-2xl p-6 md:p-8 shadow-xl hover:shadow-2xl transition-shadow duration-300 text-center",
                     div { class: "feature-icon text-4xl md:text-5xl mb-4", "📊" }
                     h3 { class: "feature-title text-lg md:text-xl font-bold text-gray-900 mb-3", "Smart Analysis" }
-                    p { class: "feature-desc text-sm md:text-base text-gray-600 leading-relaxed", 
-                        "Instantly identify qualification gaps and manning priorities" 
+                    p { class: "feature-desc text-sm md:text-base text-gray-600 leading-relaxed",
+                        "Instantly identify qualification gaps and manning priorities"
                     }
                 }
                 div {
                     class: "feature-card bg-white rounded-2xl p-6 md:p-8 shadow-xl hover:shadow-2xl transition-shadow duration-300 text-center",
                     div { class: "feature-icon text-4xl md:text-5xl mb-4", "⚡" }
                     h3 { class: "feature-title text-lg md:text-xl font-bold text-gray-900 mb-3", "Rapid Processing" }
-                    p { class: "feature-desc text-sm md:text-base text-gray-600 leading-relaxed", 
-                        "Upload reports and receive insights in under a second" 
+                    p { class: "feature-desc text-sm md:text-base text-gray-600 leading-relaxed",
+                        "Upload reports and receive insights in under a second"
                     }
                 }
                 div {
                     class: "feature-card bg-white rounded-2xl p-6 md:p-8 shadow-xl hover:shadow-2xl transition-shadow duration-300 text-center",
                     div { class: "feature-icon text-4xl md:text-5xl mb-4", "🎯" }
                     h3 { class: "feature-title text-lg md:text-xl font-bold text-gray-900 mb-3", "Optimized Assignments" }
-                    p { class: "feature-desc text-sm md:text-base text-gray-600 leading-relaxed", 
-                        "Advanced algorithm for effective personnel utilization" 
+                    p { class: "feature-desc text-sm md:text-base text-gray-600 leading-relaxed",
+                        "Advanced algorithm for effective personnel utilization"
                     }
                 }
                 div {
                     class: "feature-card bg-white rounded-2xl p-6 md:p-8 shadow-xl hover:shadow-2xl transition-shadow duration-300 text-center",
                     div { class: "feature-icon text-4xl md:text-5xl mb-4", "🔒" }
                     h3 { class: "feature-title text-lg md:text-xl font-bold text-gray-900 mb-3", "100% Private" }
-                    p { class: "feature-desc text-sm md:text-base text-gray-600 leading-relaxed", 
-                        "All processing occurs locally on your computer" 
+                    p { class: "feature-desc text-sm md:text-base text-gray-600 leading-relaxed",
+                        "All processing occurs locally on your computer"
                     }
                 }
             }
-            
+
             // How It Works Section
             div {
                 id: "how-it-works",
                 class: "how-it-works py-16 md:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto scroll-mt-16",
                 h2 { class: "section-title text-3xl md:text-4xl font-bold text-gray-900 text-center mb-4", "How It Works" }
-                p { class: "section-subtitle text-lg md:text-xl text-gray-600 text-center mb-12 max-w-2xl mx-auto", 
-                    "Four simple uploads provide comprehensive manning insights" 
+                p { class: "section-subtitle text-lg md:text-xl text-gray-600 text-center mb-12 max-w-2xl mx-auto",
+                    "Four simple uploads provide comprehensive manning insights"
                 }
-                
+
                 div {
                     class: "steps-container grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6",
                     div {
@@ -96,8 +96,8 @@ pub fn Hero() -> Element {
                         div {
                             class: "mt-2",
                             h4 { class: "step-title font-bold text-gray-900 mb-2", "Requirements File" }
-                            p { class: "step-desc text-sm text-gray-600 mb-3 leading-relaxed", 
-                                "Team structures and qualification requirements" 
+                            p { class: "step-desc text-sm text-gray-600 mb-3 leading-relaxed",
+                                "Team structures and qualification requirements"
                             }
                             div { class: "file-type-badge inline-block px-3 py-1 bg-gray-100 text-gray-700 rounded-md text-xs font-mono font-semibold", ".csv" }
                         }
@@ -108,8 +108,8 @@ pub fn Hero() -> Element {
                         div {
                             class: "mt-2",
                             h4 { class: "step-title font-bold text-gray-900 mb-2", "Qual Definitions" }
-                            p { class: "step-desc text-sm text-gray-600 mb-3 leading-relaxed", 
-                                "Maps common names to ASM equivalents" 
+                            p { class: "step-desc text-sm text-gray-600 mb-3 leading-relaxed",
+                                "Maps common names to ASM equivalents"
                             }
                             div { class: "file-type-badge inline-block px-3 py-1 bg-gray-100 text-gray-700 rounded-md text-xs font-mono font-semibold", ".csv" }
                         }
@@ -120,8 +120,8 @@ pub fn Hero() -> Element {
                         div {
                             class: "mt-2",
                             h4 { class: "step-title font-bold text-gray-900 mb-2", "ASM Report" }
-                            p { class: "step-desc text-sm text-gray-600 mb-3 leading-relaxed", 
-                                "Personnel and their qualifications" 
+                            p { class: "step-desc text-sm text-gray-600 mb-3 leading-relaxed",
+                                "Personnel and their qualifications"
                             }
                             div { class: "file-type-badge inline-block px-3 py-1 bg-gray-100 text-gray-700 rounded-md text-xs font-mono font-semibold", ".xlsx" }
                         }
@@ -132,63 +132,63 @@ pub fn Hero() -> Element {
                         div {
                             class: "mt-2",
                             h4 { class: "step-title font-bold text-gray-900 mb-2", "FLTMPS Roster" }
-                            p { class: "step-desc text-sm text-gray-600 mb-3 leading-relaxed", 
-                                "PRD and duty status information" 
+                            p { class: "step-desc text-sm text-gray-600 mb-3 leading-relaxed",
+                                "PRD and duty status information"
                             }
                             div { class: "file-type-badge inline-block px-3 py-1 bg-gray-100 text-gray-700 rounded-md text-xs font-mono font-semibold", ".xlsx" }
                         }
                     }
                 }
             }
-            
+
             // Methodology Section
             div {
                 class: "methodology-section py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white to-gray-50",
                 div {
                     class: "methodology-header text-center mb-12 max-w-4xl mx-auto",
                     h2 { class: "section-title text-3xl md:text-4xl font-bold text-gray-900 mb-4", "Intelligent Optimization" }
-                    p { class: "section-subtitle text-lg md:text-xl text-gray-600 max-w-2xl mx-auto", 
-                        "Advanced algorithm maximizes readiness while respecting operational constraints" 
+                    p { class: "section-subtitle text-lg md:text-xl text-gray-600 max-w-2xl mx-auto",
+                        "Advanced algorithm maximizes readiness while respecting operational constraints"
                     }
                 }
-                
+
                 div {
                     class: "methodology-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto",
                     div {
                         class: "methodology-card bg-white rounded-xl p-6 text-center shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300",
                         div { class: "methodology-icon text-3xl md:text-4xl mb-3", "🎖️" }
                         h4 { class: "methodology-title font-bold text-gray-900 mb-2 text-base md:text-lg", "TAR Priority" }
-                        p { class: "methodology-desc text-sm text-gray-600 leading-relaxed", 
-                            "Active duty first, then SELRES" 
+                        p { class: "methodology-desc text-sm text-gray-600 leading-relaxed",
+                            "Active duty first, then SELRES"
                         }
                     }
                     div {
                         class: "methodology-card bg-white rounded-xl p-6 text-center shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300",
                         div { class: "methodology-icon text-3xl md:text-4xl mb-3", "✈️" }
                         h4 { class: "methodology-title font-bold text-gray-900 mb-2 text-base md:text-lg", "Aircrew Protection" }
-                        p { class: "methodology-desc text-sm text-gray-600 leading-relaxed", 
-                            "Preserves flight crew availability" 
+                        p { class: "methodology-desc text-sm text-gray-600 leading-relaxed",
+                            "Preserves flight crew availability"
                         }
                     }
                     div {
                         class: "methodology-card bg-white rounded-xl p-6 text-center shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300",
                         div { class: "methodology-icon text-3xl md:text-4xl mb-3", "📅" }
                         h4 { class: "methodology-title font-bold text-gray-900 mb-2 text-base md:text-lg", "Rotation Planning" }
-                        p { class: "methodology-desc text-sm text-gray-600 leading-relaxed", 
-                            "Prioritizes 12+ months remaining" 
+                        p { class: "methodology-desc text-sm text-gray-600 leading-relaxed",
+                            "Prioritizes 12+ months remaining"
                         }
                     }
                     div {
                         class: "methodology-card bg-white rounded-xl p-6 text-center shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300",
                         div { class: "methodology-icon text-3xl md:text-4xl mb-3", "⚓" }
                         h4 { class: "methodology-title font-bold text-gray-900 mb-2 text-base md:text-lg", "Leadership Reserve" }
-                        p { class: "methodology-desc text-sm text-gray-600 leading-relaxed", 
-                            "Junior sailors first" 
+                        p { class: "methodology-desc text-sm text-gray-600 leading-relaxed",
+                            "Junior sailors first"
                         }
                     }
                 }
             }
-            
+
             // Disclaimer
             div {
                 class: "disclaimer-section py-8 md:py-12 px-4 sm:px-6 lg:px-8 bg-blue-50 border-t border-blue-100",

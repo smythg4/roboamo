@@ -1,8 +1,7 @@
+use anyhow::anyhow;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::rc::Rc;
-use anyhow::anyhow;
-
 
 // everything related to qualification footprint requirements
 
@@ -24,14 +23,14 @@ pub fn parse_requirements(data: Rc<Vec<u8>>) -> Result<Teams, Box<dyn std::error
 
     for record in rdr.deserialize() {
         let record: Requirement = record?;
-        teams.entry(record.team_name.clone())
+        teams
+            .entry(record.team_name.clone())
             .or_default()
             .push(record);
     }
 
     Ok(teams)
 }
-
 
 // everything dealing with translating ASM to common qual names
 
@@ -43,12 +42,15 @@ pub fn parse_qual_defs(data: Rc<Vec<u8>>) -> Result<QualTable, Box<dyn std::erro
 
     for record in rdr.records() {
         let record = record?;
-        let asm_name = record.get(0)
+        let asm_name = record
+            .get(0)
             .ok_or_else(|| anyhow!("Row missing ASM name column"))?;
-        let local_name = record.get(1)
+        let local_name = record
+            .get(1)
             .ok_or_else(|| anyhow!("Row missing local name column"))?;
 
-        quals.entry(local_name.to_string())
+        quals
+            .entry(local_name.to_string())
             .or_default()
             .push(asm_name.to_string());
     }
@@ -66,22 +68,22 @@ pub fn parse_asm_file(data: Rc<Vec<u8>>) -> Result<PersonnelQuals, Box<dyn std::
     let mut people = PersonnelQuals::new();
     let cursor = std::io::Cursor::new(data);
     let mut workbook: Xlsx<_> = open_workbook_from_rs(cursor)?;
-    if let Some(Ok(range)) = workbook.worksheet_range_at(0) {        
+    if let Some(Ok(range)) = workbook.worksheet_range_at(0) {
         for row in range.rows().skip(1) {
             if row.len() < 4 {
                 //log::warn!("Skipping row with {} columns (expected 4+)", row.len());
                 continue;
             }
-            let qual = row.get(1)
+            let qual = row
+                .get(1)
                 .ok_or_else(|| anyhow!("Missing qualification column at index 1"))?
                 .to_string();
-            let name = row.get(3)
+            let name = row
+                .get(3)
                 .ok_or_else(|| anyhow!("Missing name column at index 3"))?
                 .to_string();
             if !name.is_empty() && !qual.is_empty() {
-                people.entry(name)
-                    .or_default()
-                    .push(qual);
+                people.entry(name).or_default().push(qual);
             }
         }
     }
@@ -123,8 +125,7 @@ pub fn parse_fltmps_file(data: Rc<Vec<u8>>) -> Result<PRDList, Box<dyn std::erro
 
     if let Some(Ok(range)) = workbook.worksheet_range_at(0) {
         for row in range.rows() {
-            let cells = row.iter().map(data_to_string)
-                                .collect::<Vec<_>>();
+            let cells = row.iter().map(data_to_string).collect::<Vec<_>>();
             if cells.iter().any(|item| item.contains("\u{a0}PRD\u{a0}")) {
                 for (i, cell) in cells.iter().enumerate() {
                     if cell.contains("\u{a0}PRD\u{a0}") {
@@ -135,16 +136,15 @@ pub fn parse_fltmps_file(data: Rc<Vec<u8>>) -> Result<PRDList, Box<dyn std::erro
             if cells.iter().any(|item| item.contains("Name")) {
                 for (i, cell) in cells.iter().enumerate() {
                     if cell.contains("Name") {
-
                         name_col = i;
                     }
                 }
-
             }
 
-            let name = cells.get(name_col)
-                    .ok_or_else(|| format!("Row missing name column ({})", name_col))?
-                    .clone();
+            let name = cells
+                .get(name_col)
+                .ok_or_else(|| format!("Row missing name column ({})", name_col))?
+                .clone();
 
             if name.is_empty() {
                 continue;

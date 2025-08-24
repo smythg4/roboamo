@@ -1,8 +1,8 @@
 use crate::Route;
 use dioxus::prelude::*;
 
-use crate::utilities::config::PAGES;
 use crate::components::ProgressBar;
+use crate::utilities::config::PAGES;
 use crate::utilities::AppState;
 
 #[component]
@@ -11,21 +11,21 @@ pub fn Navbar() -> Element {
     let (n, _) = state().upload_progress();
     let all_complete = state().all_files_uploaded();
     let mut show_mobile_menu = use_signal(|| false);
-    
+
     rsx! {
         div {
             class: "sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm",
-            
+
             // Main navbar container
             div {
                 class: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
                 div {
                     class: "flex justify-between items-center h-16",
-                    
+
                     // Left side - Logo and primary nav
                     div {
                         class: "flex items-center",
-                        
+
                         // Mobile menu button
                         button {
                             onclick: move |_| show_mobile_menu.set(!show_mobile_menu()),
@@ -52,11 +52,11 @@ pub fn Navbar() -> Element {
                                 }
                             }
                         }
-                        
+
                         // Desktop Navigation
                         div {
                             class: "hidden lg:flex items-center space-x-1",
-                            
+
                             // Home link - Compact
                             Link {
                                 to: Route::Home {},
@@ -75,7 +75,7 @@ pub fn Navbar() -> Element {
                                 }
                                 "Home"
                             }
-                            
+
                             // Roadmap link - Compact
                             Link {
                                 to: Route::ProductRoadmap {},
@@ -95,7 +95,7 @@ pub fn Navbar() -> Element {
                                 }
                                 "Roadmap"
                             }
-                            
+
                             // Divider
                             div {
                                 class: "h-5 w-px bg-gray-300 mx-1"
@@ -145,7 +145,7 @@ pub fn Navbar() -> Element {
                                 }
                             }
 
-                            
+
                             // Generate button - Compact version
                             if all_complete {
                                 Link {
@@ -175,7 +175,7 @@ pub fn Navbar() -> Element {
                             }
                         }
                     }
-                    
+
                     // Right side - Progress (more compact)
                     div {
                         class: "hidden sm:block",
@@ -183,32 +183,32 @@ pub fn Navbar() -> Element {
                     }
                 }
             }
-            
+
             // Mobile menu dropdown
             if show_mobile_menu() {
                 div {
                     class: "lg:hidden border-t border-gray-200 bg-white",
                     div {
                         class: "px-2 pt-2 pb-3 space-y-1",
-                        
+
                         Link {
                             to: Route::Home {},
                             onclick: move |_| show_mobile_menu.set(false),
                             class: "block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100",
                             "🏠 Home"
                         }
-                        
+
                         Link {
                             to: Route::ProductRoadmap {},
                             onclick: move |_| show_mobile_menu.set(false),
                             class: "block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100",
                             "🚧 Roadmap"
                         }
-                        
+
                         div {
                             class: "border-t border-gray-200 my-2"
                         }
-                        
+
                         for (idx, page) in PAGES.iter().enumerate() {
                             if idx < n || idx == 0 {
                                 Link {
@@ -229,7 +229,7 @@ pub fn Navbar() -> Element {
                                 }
                             }
                         }
-                        
+
                         if all_complete {
                             div {
                                 class: "border-t border-gray-200 my-2"
@@ -241,7 +241,7 @@ pub fn Navbar() -> Element {
                                 "Generate Assignments ✓"
                             }
                         }
-                        
+
                         // Mobile progress
                         div {
                             class: "border-t border-gray-200 mt-2 pt-2",

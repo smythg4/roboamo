@@ -1,6 +1,6 @@
-use dioxus::prelude::*;
-use crate::Route;
 use crate::utilities::AppState;
+use crate::Route;
+use dioxus::prelude::*;
 
 #[component]
 pub fn ProgressBar() -> Element {
@@ -8,15 +8,15 @@ pub fn ProgressBar() -> Element {
     let (up, tot) = app_state().upload_progress();
     let nav = use_navigator();
     let percentage = ((up as f32 / tot as f32) * 100.0) as u32;
-    
+
     rsx! {
         div {
             class: "flex items-center gap-4",
-            
+
             // Progress indicator
             div {
                 class: "flex items-center gap-3",
-                
+
                 // Progress ring
                 div {
                     class: "relative",
@@ -49,7 +49,7 @@ pub fn ProgressBar() -> Element {
                         "{up}/{tot}"
                     }
                 }
-                
+
                 // Text indicator
                 div {
                     class: "flex flex-col",
@@ -67,7 +67,7 @@ pub fn ProgressBar() -> Element {
                     }
                 }
             }
-            
+
             // Reset button
             button {
                 onclick: move |_| {

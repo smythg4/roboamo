@@ -1,14 +1,9 @@
-
+use crate::utilities::parsing::{PRDList, PersonnelQuals, QualTable, Teams};
 use std::collections::HashMap;
 use std::rc::Rc;
-use crate::utilities::parsing::{Teams, QualTable, PersonnelQuals, PRDList};
 
-pub const PAGES: [&str; 4] = [
-    "Requirements",
-    "Qual Defs",
-    "ASM",
-    "FLTMPS"];
-    
+pub const PAGES: [&str; 4] = ["Requirements", "Qual Defs", "ASM", "FLTMPS"];
+
 const DESCS: [&str; 4] = [
     "This file defines the set of groups used within the system, including a listing of all qualifications associated with each group and the quantity of personnel required to hold each qualification.",
     "This lookup table provides a mapping between ASM qualification names and their equivalent descriptions used in your requirements file, allowing for easier interpretation.",
@@ -22,29 +17,19 @@ const PREVIEWS: [PreviewType; 4] = [
     PreviewType::ASM,
     PreviewType::FLTMPS,
 ];
-const FILE_TYPES: [&str; 4] = [
-    ".csv",
-    ".csv",
-    ".xlsx",
-    ".xlsx",
-];
-const NEXT_PAGES: [Option<&str>; 4] = [
-    Some("Qual Defs"),
-    Some("ASM"),
-    Some("FLTMPS"),
-    None,
-];
+const FILE_TYPES: [&str; 4] = [".csv", ".csv", ".xlsx", ".xlsx"];
+const NEXT_PAGES: [Option<&str>; 4] = [Some("Qual Defs"), Some("ASM"), Some("FLTMPS"), None];
 const DEMO_PATHS: [Option<&str>; 4] = [
-            Some("/assets/demo/demoteams.csv"),
-            Some("/assets/demo/demoqualtable.csv"),
-            Some("/assets/demo/demoasm.xlsx"),
-            Some("/assets/demo/demofltmps.xlsx"),
+    Some("/assets/demo/demoteams.csv"),
+    Some("/assets/demo/demoqualtable.csv"),
+    Some("/assets/demo/demoasm.xlsx"),
+    Some("/assets/demo/demofltmps.xlsx"),
 ];
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum PreviewType {
     Requirements,
-    QualDef, 
+    QualDef,
     ASM,
     FLTMPS,
 }
@@ -69,7 +54,6 @@ pub struct FileUploadConfig {
     pub demo_file_path: Option<&'static str>,
 }
 
-
 #[derive(Debug, Clone)]
 pub struct AppState {
     pub files: HashMap<String, FileUploadConfig>,
@@ -89,8 +73,7 @@ impl Default for AppState {
                 parsed_data: None,
                 demo_file_path: DEMO_PATHS[i],
             };
-            files.entry(page_name.to_string())
-                .or_insert(file);
+            files.entry(page_name.to_string()).or_insert(file);
         }
         AppState { files }
     }
@@ -102,7 +85,13 @@ impl AppState {
     }
 
     pub fn upload_progress(&self) -> (usize, usize) {
-        ( self.files.values().filter(|f| f.parsed_data.is_some() ).count(), PAGES.len() )
+        (
+            self.files
+                .values()
+                .filter(|f| f.parsed_data.is_some())
+                .count(),
+            PAGES.len(),
+        )
     }
 }
 

@@ -2,14 +2,13 @@
 // need dioxus
 use dioxus::prelude::*;
 
-use views::{FileUpload, Home, Navbar, Results, ProductRoadmap};
 use utilities::config::AppState;
+use views::{FileUpload, Home, Navbar, ProductRoadmap, Results};
 
 mod components;
-mod views;
-mod utilities;
 mod engine;
-
+mod utilities;
+mod views;
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
@@ -41,7 +40,6 @@ fn main() {
 
 #[component]
 fn App() -> Element {
-
     use_context_provider(|| Signal::new(AppState::default()));
     rsx! {
         document::Stylesheet {

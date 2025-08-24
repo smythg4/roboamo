@@ -1,41 +1,45 @@
-use dioxus::prelude::*;
-use crate::engine::builder::{build_assignment_plan, build_people, generate_assignments, AssignmentResult};
-use crate::engine::person::DutyStatus;
 use crate::engine::assignment::FlowAssignment;
+use crate::engine::builder::{
+    build_assignment_plan, build_people, generate_assignments, AssignmentResult,
+};
+use crate::engine::person::DutyStatus;
 use crate::engine::person::Person;
 use crate::engine::team::Team;
-use itertools::Itertools;
 use crate::utilities::AppState;
 use crate::views::ErrorDisplay;
+use dioxus::prelude::*;
+use itertools::Itertools;
 use std::rc::Rc;
 
 #[component]
 pub fn Results() -> Element {
     // Subscribe to app state changes
     let app_state = use_context::<Signal<AppState>>();
-    
+
     // Store just the raw data without the assignment plan
     let mut raw_data = use_signal(|| None::<(Vec<FlowAssignment>, Rc<Vec<Person>>, Rc<Vec<Team>>)>);
-    
+
     // Recompute when app state changes
     use_effect(move || {
         // Read app state to trigger recomputation on changes
         let _ = app_state();
-        
+
         // Generate fresh assignments
         let data = match generate_assignments() {
-            Ok(AssignmentResult{ flow_assignments, people, teams}) => {
-                Some((flow_assignments, people, teams))
-            }
+            Ok(AssignmentResult {
+                flow_assignments,
+                people,
+                teams,
+            }) => Some((flow_assignments, people, teams)),
             Err(e) => {
                 eprintln!("Error generating assignments: {:?}", e);
                 None
             }
         };
-        
+
         raw_data.set(data);
     });
-    
+
     // Handle the case where assignments couldn't be generated
     let Some((ref flow_assignments, ref people, ref teams)) = *raw_data.read() else {
         return rsx! {
@@ -55,7 +59,7 @@ pub fn Results() -> Element {
             }
         };
     };
-    
+
     // Build the assignment plan here, where we can use the references
     let assignments = match build_assignment_plan(people, teams, flow_assignments) {
         Ok(plan) => plan,
@@ -70,10 +74,13 @@ pub fn Results() -> Element {
             };
         }
     };
-    
-    let teams_with_assignments: Vec<_> = teams.iter()
+
+    let teams_with_assignments: Vec<_> = teams
+        .iter()
         .map(|team| {
-            let team_assignments: Vec<_> = assignments.assignments.iter()
+            let team_assignments: Vec<_> = assignments
+                .assignments
+                .iter()
                 .filter(|a| a.team_name == team.name)
                 .collect();
             (team, team_assignments)
@@ -87,7 +94,7 @@ pub fn Results() -> Element {
     rsx! {
         div {
             class: "results-container",
-            
+
             // Header with summary stats
             div {
                 class: "results-header",
@@ -132,7 +139,7 @@ pub fn Results() -> Element {
                                 span { class: "team-icon", "👥" }
                                 "{team.name} ({team_assignments.len()} assigned)"
                             }
-                            
+
                             div {
                                 class: "table-wrapper",
                                 table {
@@ -151,22 +158,22 @@ pub fn Results() -> Element {
                                         for assignment in team_assignments {
                                             tr {
                                                 class: "table-row",
-                                                td { 
+                                                td {
                                                     class: "table-cell-name",
-                                                    "{assignment.person.name}" 
+                                                    "{assignment.person.name}"
                                                 }
-                                                td { 
+                                                td {
                                                     class: "table-cell-muted",
-                                                    "{assignment.person.raterank}" 
+                                                    "{assignment.person.raterank}"
                                                 }
-                                                td { 
+                                                td {
                                                     class: "table-cell",
                                                     span {
                                                         class: "role-badge",
                                                         "{assignment.qualification}"
                                                     }
                                                 }
-                                                td { 
+                                                td {
                                                     class: "table-cell",
                                                     match assignment.person.duty_status {
                                                         DutyStatus::TAR => rsx! {
@@ -183,7 +190,7 @@ pub fn Results() -> Element {
                                                         }
                                                     }
                                                 }
-                                                td { 
+                                                td {
                                                     class: "table-cell-muted",
                                                     if let Some(prd) = assignment.person.prd {
                                                         "{prd}"
@@ -209,7 +216,7 @@ pub fn Results() -> Element {
                         class: "section-title-warning",
                         "⚠️ Unfilled Positions"
                     }
-                    
+
                     div {
                         class: "unfilled-grid",
                         for (team_name, qualification) in &assignments.unfilled_positions {
@@ -231,7 +238,7 @@ pub fn Results() -> Element {
                         class: "section-title-alert",
                         "👤 Unassigned Personnel"
                     }
-                    
+
                     div {
                         class: "table-wrapper",
                         table {
@@ -251,15 +258,15 @@ pub fn Results() -> Element {
                                     .sorted_by(|p, q| Ord::cmp(&q.qualifications.len(), &p.qualifications.len())) {
                                     tr {
                                         class: "table-row",
-                                        td { 
+                                        td {
                                             class: "table-cell-name",
-                                            "{person.name}" 
+                                            "{person.name}"
                                         }
-                                        td { 
+                                        td {
                                             class: "table-cell-muted",
-                                            "{person.raterank}" 
+                                            "{person.raterank}"
                                         }
-                                        td { 
+                                        td {
                                             class: "table-cell",
                                             match person.duty_status {
                                                 DutyStatus::TAR => rsx! {
@@ -294,7 +301,7 @@ pub fn Results() -> Element {
                                                 }
                                             }
                                         }
-                                        td { 
+                                        td {
                                             class: "table-cell-small",
                                             "{person.qualifications.join(\", \")}"
                                         }
@@ -313,15 +320,15 @@ pub fn Results() -> Element {
 pub fn People() -> Element {
     // Also make this reactive to app state
     let app_state = use_context::<Signal<AppState>>();
-    
+
     let mut people_data = use_signal(|| None::<Vec<Person>>);
-    
+
     use_effect(move || {
         let _ = app_state();
         let data = build_people().ok();
         people_data.set(data);
     });
-    
+
     let Some(ref people) = *people_data.read() else {
         return rsx! {
             div {
@@ -330,7 +337,7 @@ pub fn People() -> Element {
             }
         };
     };
-    
+
     rsx! {
         table {
             thead {

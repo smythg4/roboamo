@@ -1,20 +1,22 @@
 use dioxus::prelude::*;
 
-use crate::utilities::{parse_requirements, parse_qual_defs, parse_asm_file, parse_fltmps_file};
-use crate::utilities::PreviewType;
 use crate::utilities::AppState;
+use crate::utilities::PreviewType;
+use crate::utilities::{parse_asm_file, parse_fltmps_file, parse_qual_defs, parse_requirements};
 
 use std::rc::Rc;
 
 #[component]
 pub fn Preview(preview_type: PreviewType) -> Element {
     let app_state = use_context::<Signal<AppState>>();
-    
+
     // Find the file data for the current page
-    let file_data = app_state().files.values()
+    let file_data = app_state()
+        .files
+        .values()
         .find(|f| f.preview_type == preview_type)
         .and_then(|f| f.file_content.clone());
-    
+
     rsx! {
         div {
             class: "preview-section",
@@ -28,7 +30,7 @@ pub fn Preview(preview_type: PreviewType) -> Element {
                         PreviewType::FLTMPS => rsx!{ FLTMPSPreview { data } },
                     }
                 } else {
-                    rsx! { 
+                    rsx! {
                         div {
                             class: "flex items-center justify-center h-64 text-gray-500",
                             div {
@@ -45,9 +47,9 @@ pub fn Preview(preview_type: PreviewType) -> Element {
                                         d: "M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
                                     }
                                 }
-                                p { 
+                                p {
                                     class: "text-lg font-medium",
-                                    "No file uploaded yet" 
+                                    "No file uploaded yet"
                                 }
                             }
                         }
@@ -65,7 +67,7 @@ pub fn RequirementsPreview(data: Rc<Vec<u8>>) -> Element {
             rsx! {
                 div {
                     class: "space-y-6",
-                    
+
                     // Summary card
                     div {
                         class: "bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200",
@@ -87,7 +89,7 @@ pub fn RequirementsPreview(data: Rc<Vec<u8>>) -> Element {
                             }
                         }
                     }
-                    
+
                     // Teams grid
                     div {
                         class: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4",
@@ -96,7 +98,7 @@ pub fn RequirementsPreview(data: Rc<Vec<u8>>) -> Element {
                                 class: "bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200",
                                 div {
                                     class: "bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-3 border-b border-gray-200",
-                                    h4 { 
+                                    h4 {
                                         class: "font-semibold text-gray-900 flex items-center gap-2",
                                         span { "👥" }
                                         "{team_name}"
@@ -133,7 +135,7 @@ pub fn RequirementsPreview(data: Rc<Vec<u8>>) -> Element {
                     }
                 }
             }
-        },
+        }
         Err(e) => {
             rsx! {
                 div {
@@ -174,7 +176,7 @@ pub fn QualDefPreview(data: Rc<Vec<u8>>) -> Element {
             rsx! {
                 div {
                     class: "space-y-4",
-                    
+
                     // Summary card
                     div {
                         class: "bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 border border-green-200",
@@ -196,7 +198,7 @@ pub fn QualDefPreview(data: Rc<Vec<u8>>) -> Element {
                             }
                         }
                     }
-                    
+
                     // Qualifications table
                     div {
                         class: "bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden",
@@ -205,13 +207,13 @@ pub fn QualDefPreview(data: Rc<Vec<u8>>) -> Element {
                             thead {
                                 class: "bg-gray-50",
                                 tr {
-                                    th { 
+                                    th {
                                         class: "px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider",
                                         "Common Name"
                                     }
-                                    th { 
+                                    th {
                                         class: "px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider",
-                                        "ASM Equivalents" 
+                                        "ASM Equivalents"
                                     }
                                 }
                             }
@@ -220,9 +222,9 @@ pub fn QualDefPreview(data: Rc<Vec<u8>>) -> Element {
                                 for (qual_name, asm_quals) in quals {
                                     tr {
                                         class: "hover:bg-gray-50 transition-colors duration-150",
-                                        td { 
+                                        td {
                                             class: "px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900",
-                                            {qual_name} 
+                                            {qual_name}
                                         }
                                         td {
                                             class: "px-6 py-4 text-sm text-gray-600",
@@ -243,14 +245,14 @@ pub fn QualDefPreview(data: Rc<Vec<u8>>) -> Element {
                     }
                 }
             }
-        },
+        }
         Err(e) => {
             rsx! {
                 div {
                     class: "bg-red-50 border border-red-200 rounded-lg p-4",
-                    p { 
+                    p {
                         class: "text-sm text-red-700",
-                        "Error reading file: {e}" 
+                        "Error reading file: {e}"
                     }
                 }
             }
@@ -264,11 +266,11 @@ pub fn ASMPreview(data: Rc<Vec<u8>>) -> Element {
         Ok(people) => {
             let total_people = people.len();
             let total_quals: usize = people.values().map(|quals| quals.len()).sum();
-            
+
             rsx! {
                 div {
                     class: "space-y-4",
-                    
+
                     // Summary card
                     div {
                         class: "bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-4 border border-purple-200",
@@ -299,7 +301,7 @@ pub fn ASMPreview(data: Rc<Vec<u8>>) -> Element {
                             }
                         }
                     }
-                    
+
                     // Search/filter bar (placeholder for future functionality)
                     div {
                         class: "bg-white rounded-lg shadow-sm border border-gray-200 p-4",
@@ -310,7 +312,7 @@ pub fn ASMPreview(data: Rc<Vec<u8>>) -> Element {
                             class: "w-full px-4 py-2 text-sm border border-gray-300 rounded-lg bg-gray-50 cursor-not-allowed",
                         }
                     }
-                    
+
                     // Personnel list
                     div {
                         class: "bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden",
@@ -321,13 +323,13 @@ pub fn ASMPreview(data: Rc<Vec<u8>>) -> Element {
                                 thead {
                                     class: "bg-gray-50 sticky top-0 z-10",
                                     tr {
-                                        th { 
+                                        th {
                                             class: "px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-80",
                                             "Name"
                                         }
-                                        th { 
+                                        th {
                                             class: "px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider",
-                                            "Qualifications" 
+                                            "Qualifications"
                                         }
                                     }
                                 }
@@ -336,7 +338,7 @@ pub fn ASMPreview(data: Rc<Vec<u8>>) -> Element {
                                     for (name, asm_quals) in people {
                                         tr {
                                             class: "hover:bg-gray-50 transition-colors duration-150",
-                                            td { 
+                                            td {
                                                 class: "px-4 py-3 text-sm font-medium text-gray-900 w-80 max-w-xs",
                                                 div {
                                                     class: "truncate",
@@ -365,14 +367,14 @@ pub fn ASMPreview(data: Rc<Vec<u8>>) -> Element {
                     }
                 }
             }
-        },
+        }
         Err(e) => {
             rsx! {
                 div {
                     class: "bg-red-50 border border-red-200 rounded-lg p-4",
-                    p { 
+                    p {
                         class: "text-sm text-red-700",
-                        "Error reading file: {e}" 
+                        "Error reading file: {e}"
                     }
                 }
             }
@@ -387,11 +389,11 @@ pub fn FLTMPSPreview(data: Rc<Vec<u8>>) -> Element {
             let total_personnel = prds.len();
             let with_prd = prds.values().filter(|prd| prd.is_some()).count();
             let selres = total_personnel - with_prd;
-            
+
             rsx! {
                 div {
                     class: "space-y-4",
-                    
+
                     // Summary cards
                     div {
                         class: "grid grid-cols-1 md:grid-cols-3 gap-4",
@@ -447,7 +449,7 @@ pub fn FLTMPSPreview(data: Rc<Vec<u8>>) -> Element {
                             }
                         }
                     }
-                    
+
                     // PRD table
                     div {
                         class: "bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden",
@@ -465,17 +467,17 @@ pub fn FLTMPSPreview(data: Rc<Vec<u8>>) -> Element {
                                 thead {
                                     class: "bg-gray-50",
                                     tr {
-                                        th { 
+                                        th {
                                             class: "px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/2",
                                             "Name"
                                         }
-                                        th { 
+                                        th {
                                             class: "px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4",
-                                            "PRD" 
+                                            "PRD"
                                         }
-                                        th { 
+                                        th {
                                             class: "px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4",
-                                            "Status" 
+                                            "Status"
                                         }
                                     }
                                 }
@@ -484,7 +486,7 @@ pub fn FLTMPSPreview(data: Rc<Vec<u8>>) -> Element {
                                     for (name, prd) in prds {
                                         tr {
                                             class: "hover:bg-gray-50 transition-colors duration-150",
-                                            td { 
+                                            td {
                                                 class: "px-4 py-2 text-gray-900 truncate",
                                                 title: "{name}",
                                                 {name.clone()}
@@ -525,14 +527,14 @@ pub fn FLTMPSPreview(data: Rc<Vec<u8>>) -> Element {
                     }
                 }
             }
-        },
+        }
         Err(e) => {
             rsx! {
                 div {
                     class: "bg-red-50 border border-red-200 rounded-lg p-4",
-                    p { 
+                    p {
                         class: "text-sm text-red-700",
-                        "Error reading file: {e}" 
+                        "Error reading file: {e}"
                     }
                 }
             }
