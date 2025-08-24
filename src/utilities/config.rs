@@ -20,10 +20,10 @@ const PREVIEWS: [PreviewType; 4] = [
 const FILE_TYPES: [&str; 4] = [".csv", ".csv", ".xlsx", ".xlsx"];
 const NEXT_PAGES: [Option<&str>; 4] = [Some("Qual Defs"), Some("ASM"), Some("FLTMPS"), None];
 const DEMO_PATHS: [Option<&str>; 4] = [
-    Some("assets/demo/demoteams.csv"),
-    Some("assets/demo/demoqualtable.csv"),
-    Some("assets/demo/demoasm.xlsx"),
-    Some("assets/demo/demofltmps.xlsx"),
+    Some("/roboamo/assets/demo/demoteams.csv"),
+    Some("/roboamo/assets/demo/demoqualtable.csv"),
+    Some("/roboamo/assets/demo/demoasm.xlsx"),
+    Some("/roboamo/assets/demo/demofltmps.xlsx"),
 ];
 
 #[derive(Debug, PartialEq, Eq, Clone)]
