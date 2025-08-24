@@ -36,6 +36,9 @@ jobs:
     - name: Build
       run: dx build --release
 
+    - name: List build output
+      run: ls -R ./target/dx/roboamo/release/web/public
+
     - name: Deploy to GitHub Pages
       if: github.ref == 'refs/heads/main'
       uses: peaceiris/actions-gh-pages@v3
