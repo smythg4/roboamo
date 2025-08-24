@@ -45,8 +45,8 @@ pub fn ProductRoadmap() -> Element {
                             FeatureCard {
                                 icon: "📄",
                                 title: "Template Downloads",
-                                description: "Downloadable CSV templates with proper formatting and examples",
-                                status: "in-progress"
+                                description: "Downloadable CSV and XSLX templates with proper formatting and examples",
+                                status: "complete"
                             }
                             
                             // User Feedback

@@ -1,0 +1,11 @@
+{
+  "application": {
+    "name": "roboamo"
+  },
+  "web": {
+    "app": {
+      "title": "RoboAMO"
+    },
+    "base_path": "/"
+  }
+}
