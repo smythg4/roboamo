@@ -3731,6 +3731,7 @@ dependencies = [
  "once_cell",
  "regex",
  "serde",
+ "wasm-bindgen",
  "web-sys",
 ]
 

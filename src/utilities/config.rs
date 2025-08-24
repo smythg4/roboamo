@@ -34,6 +34,12 @@ const NEXT_PAGES: [Option<&str>; 4] = [
     Some("FLTMPS"),
     None,
 ];
+const DEMO_PATHS: [Option<&str>; 4] = [
+            Some("/assets/demo/demoteams.csv"),
+            Some("/assets/demo/demoqualtable.csv"),
+            Some("/assets/demo/demoasm.xlsx"),
+            Some("/assets/demo/demofltmps.xlsx"),
+];
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum PreviewType {
@@ -60,6 +66,7 @@ pub struct FileUploadConfig {
     pub file_types: String,
     pub next_page: Option<String>,
     pub parsed_data: Option<ParsedData>,
+    pub demo_file_path: Option<&'static str>,
 }
 
 
@@ -80,6 +87,7 @@ impl Default for AppState {
                 file_types: FILE_TYPES[i].to_string(),
                 next_page: NEXT_PAGES[i].map(|page| page.to_string()),
                 parsed_data: None,
+                demo_file_path: DEMO_PATHS[i],
             };
             files.entry(page_name.to_string())
                 .or_insert(file);

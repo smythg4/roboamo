@@ -8,6 +8,8 @@ use crate::views::ErrorDisplay;
 use std::rc::Rc;
 use anyhow::{Result, Context};
 
+use wasm_bindgen::{JsCast};
+
 #[component]
 pub fn FileUpload(page: String) -> Element {
     let mut app_state = use_context::<Signal<AppState>>();
@@ -25,10 +27,11 @@ pub fn FileUpload(page: String) -> Element {
             page_data.file_content.clone(),
             page_data.file_name.clone(),
             page_data.preview_type.clone(),
+            page_data.demo_file_path.clone(),
         ))
     })();
 
-    let (page_desc, file_types, next_page, file_content, file_name, preview_type) = match page_data_result {
+    let (page_desc, file_types, next_page, file_content, file_name, preview_type, demo_path) = match page_data_result {
         Ok(data) => data,
         Err(e) => {
             return rsx! {
@@ -53,6 +56,8 @@ pub fn FileUpload(page: String) -> Element {
     // Clone page for use in closures
     let page_for_onchange = page.clone();
     let page_for_onclick = page.clone();
+    let page_for_demo = page.clone();
+    let file_types_for_demo = file_types.clone();
 
     rsx! {
         div {
@@ -111,7 +116,42 @@ pub fn FileUpload(page: String) -> Element {
                                 }
                             }
                         }
-                        
+                        // In file_upload.rs
+                        button {
+                            onclick: move |_| {
+                                if let Some(demo_path) = demo_path {
+                                    let window = web_sys::window().unwrap();
+                                    let document = window.document().unwrap();
+                                    let a = document.create_element("a").unwrap()
+                                        .dyn_into::<web_sys::HtmlAnchorElement>().unwrap();
+                                    
+                                    a.set_href(demo_path);
+                                    a.set_download(&format!("demo_{}.{}", 
+                                        page_for_demo.to_lowercase().replace(" ", "_"), 
+                                        if file_types_for_demo.contains("csv") { "csv" } else { "xlsx" }
+                                    ));
+                                    //a.style().set_property("display", "none").unwrap();
+                                    
+                                    document.body().unwrap().append_child(&a).unwrap();
+                                    a.click();
+                                    document.body().unwrap().remove_child(&a).unwrap();
+                                }
+                            },
+                            class: "inline-flex items-center px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors",
+                            svg {
+                                class: "w-4 h-4 mr-1",
+                                fill: "none",
+                                stroke: "currentColor",
+                                "stroke-width": "2",
+                                "viewBox": "0 0 24 24",
+                                path {
+                                    "stroke-linecap": "round",
+                                    "stroke-linejoin": "round",
+                                    d: "M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                }
+                            }
+                            "Download Demo File"
+                        }
                         // Upload area
                         div {
                             class: "relative",
