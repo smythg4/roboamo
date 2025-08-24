@@ -6,11 +6,23 @@ dx build --release
 
 OUTPUT_DIR=target/dx/roboamo/release/web/public
 
-wasm-opt -Oz $OUTPUT_DIR/*.wasm -o $OUTPUT_DIR/app_opt.wasm
-mv $OUTPUT_DIR/app_opt.wasm $OUTPUT_DIR/*.wasm
+# Optimize wasm (inside wasm/ subdir)
+if command -v wasm-opt &> /dev/null; then
+  for wasm in $OUTPUT_DIR/wasm/*.wasm; do
+    [ -e "$wasm" ] || continue
+    echo "Optimizing $wasm..."
+    wasm-opt -Oz "$wasm" -o "${wasm%.wasm}_opt.wasm"
+    mv "${wasm%.wasm}_opt.wasm" "$wasm"
+  done
+else
+  echo "wasm-opt not found, skipping optimization"
+fi
 
-gzip -k $OUTPUT_DIR/*.wasm
-gzip -k $OUTPUT_DIR/*.js
+# Gzip wasm + js (nested in wasm/ and assets/)
+for f in $OUTPUT_DIR/wasm/*.wasm $OUTPUT_DIR/assets/*.js; do
+  [ -e "$f" ] || continue
+  gzip -kf "$f"
+done
 
 echo "Build complete! Size report:"
 du -sh $OUTPUT_DIR/*

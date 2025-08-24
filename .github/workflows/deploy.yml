@@ -3,8 +3,6 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [ main ]
-  pull_request:
-      branches: [ main ]
 
 jobs:
   build-and-deploy:
@@ -18,12 +16,6 @@ jobs:
       with:
         target: wasm32-unknown-unknown
 
-    - name: Install Dioxus CLI
-      run: cargo install dioxus-cli
-
-    - name: Install wasm-pack
-      run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-
     - name: Cache cargo registry
       uses: actions/cache@v3
       with:
@@ -33,21 +25,16 @@ jobs:
           target
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
+    - name: Install Dioxus CLI
+      run: cargo install dioxus-cli
+
     - name: Build
       run: dx build --release
-
-    - name: Prepare deployment
-      run: |
-        rm -rf public
-        mkdir public
-        cp -r target/dx/roboamo/release/web/public/* public/
-        # Fix paths for GitHub Pages subdirectory
-        sed -i 's|href="/|href="/roboamo/|g' public/index.html
-        sed -i 's|src="/|src="/roboamo/|g' public/index.html
 
     - name: Deploy to GitHub Pages
       if: github.ref == 'refs/heads/main'
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./public
+        publish_dir: ./target/dx/roboamo/release/web/public
+
