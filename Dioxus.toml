@@ -1,21 +1,32 @@
 [application]
+name = "RoboAMO"
+default_platform = "web"
+out_dir = "dist"
+asset_dir = "public"
+
+[application.tools]
+binaryen = { wasm-opt = true }
 
 [web.app]
-
 # HTML title tag content
 title = "RoboAMO"
+base_path = "/roboamo/"
+
+[web.watcher]
+reload_html = true
+index_on_404 = true
 
 # include `assets` in web platform
 [web.resource]
 
 # Additional CSS style files
-style = []
+style = ["input.css", "style.css"]
 
 # Additional JavaScript files
 script = []
 
 [web.resource.dev]
-
+style = ["input.css"]
 # Javascript code file
 # serve: [dev-server] only
 script = []

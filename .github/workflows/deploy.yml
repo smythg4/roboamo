@@ -1,0 +1,51 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+      branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    - uses: actions/ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        target: wasm32-unknown-unknown
+
+    - name: Install Dioxus CLI
+      run: cargo install dioxus-cli
+
+    - name: Install wasm-pack
+      run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+    - name: Cache cargo registry
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Build
+      run: dx build --release
+
+    - name: Prepare deployment
+      run: |
+        cp -r dist public
+        # Fix paths for GitHub Pages subdirectory
+        sed -i 's|href="/|href="/roboamo/|g' public/index.html
+        sed -i 's|src="/|src="/roboamo/|g' public/index.html
+
+    - name: Deploy to GitHub Pages
+      if: github.ref == 'refs/heads/main'
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./public
