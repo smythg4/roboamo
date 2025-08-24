@@ -4,12 +4,14 @@ echo "Building RoboAMO for production..."
 
 dx build --release
 
-wasm-opt -Oz dist/*.wasm -o dist/app_opt.wasm
-mv dist/app_opt.wasm dist/*.wasm
+OUTPUT_DIR=target/dx/roboamo/release/web/public
 
-gzip -k dist/*.wasm
-gzip -k dist/*.js
+wasm-opt -Oz $OUTPUT_DIR/*.wasm -o $OUTPUT_DIR/app_opt.wasm
+mv $OUTPUT_DIR/app_opt.wasm $OUTPUT_DIR/*.wasm
+
+gzip -k $OUTPUT_DIR/*.wasm
+gzip -k $OUTPUT_DIR/*.js
 
 echo "Build complete! Size report:"
-du -sh dist/*
+du -sh $OUTPUT_DIR/*
 
