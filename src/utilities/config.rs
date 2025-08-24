@@ -96,3 +96,19 @@ impl AppState {
         ( self.files.values().filter(|f| f.parsed_data.is_some() ).count(), PAGES.len() )
     }
 }
+
+pub struct Config {
+    pub base_url: &'static str,
+}
+
+impl Config {
+    pub fn new() -> Self {
+        #[cfg(debug_assertions)]
+        let base_url = "http://localhost:8080";
+
+        #[cfg(not(debug_assertions))]
+        let base_url = "https://smythg4.github.io/roboamo";
+
+        Self { base_url }
+    }
+}
