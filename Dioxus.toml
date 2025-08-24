@@ -30,9 +30,3 @@ style = ["input.css"]
 # Javascript code file
 # serve: [dev-server] only
 script = []
-
-[build]
-assets = "assets"  # Specify the directory where your assets are located
-
-[output]
-path = "dist"  # Specify the output directory for the built files

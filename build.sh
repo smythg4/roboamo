@@ -5,6 +5,17 @@ echo "Building RoboAMO for production..."
 dx build --release
 
 OUTPUT_DIR=target/dx/roboamo/release/web/public
+# Copy the demo directory to the output directory
+DEMO_SRC=assets/demo
+DEMO_DEST=$OUTPUT_DIR/assets/demo
+
+# Copy the demo directory contents
+if [ -d "$DEMO_SRC" ]; then
+  echo "Copying demo assets from $DEMO_SRC to $DEMO_DEST..."
+  cp -r "$DEMO_SRC/"* "$DEMO_DEST/"
+else
+  echo "Demo directory not found: $DEMO_SRC"
+fi
 
 # Optimize wasm (inside wasm/ subdir)
 if command -v wasm-opt &> /dev/null; then
