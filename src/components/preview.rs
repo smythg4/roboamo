@@ -513,7 +513,7 @@ pub fn FLTMPSPreview(data: Rc<Vec<u8>>) -> Element {
                 class: "bg-white rounded-lg shadow-sm border border-gray-200 p-4",
                 input {
                     r#type: "search",
-                    placeholder: "Search personnel by name or qual...",
+                    placeholder: "Search personnel by name...",
                     disabled: false,
                     class: "w-full px-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
                     oninput: move |evt| search_term.set(evt.value()),
