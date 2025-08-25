@@ -41,11 +41,11 @@ pub fn ProductRoadmap() -> Element {
                         div {
                             class: "p-6 space-y-4",
 
-                            // Template Files
+                            // COMPLETED
                             FeatureCard {
                                 icon: "📄",
                                 title: "Template Downloads",
-                                description: "Downloadable CSV and XSLX templates with proper formatting and examples",
+                                description: "Downloadable CSV and XLSX templates with proper formatting and examples",
                                 status: "complete"
                             }
                             FeatureCard {
@@ -54,47 +54,14 @@ pub fn ProductRoadmap() -> Element {
                                 description: "Streamlined data structures and parsing workflows",
                                 status: "complete"
                             }
-                            // User Feedback
-                            FeatureCard {
-                                icon: "💬",
-                                title: "Feedback System",
-                                description: "Built-in comment section for user suggestions and bug reports",
-                                status: "research"
-                            }
 
-                            // Search Function
+                            // IN PROGRESS
                             FeatureCard {
                                 icon: "🔍",
                                 title: "Smart Search",
                                 description: "Quick search across all data to validate specific personnel -- currently works on ASM preview",
                                 status: "in-progress"
                             }
-
-                            // In-Browser Editing
-                            FeatureCard {
-                                icon: "📝",
-                                title: "Live Data Editing",
-                                description: "Edit uploaded data directly in the browser before processing",
-                                status: "research"
-                            }
-
-                            // Manual Override
-                            FeatureCard {
-                                icon: "🔄",
-                                title: "Assignment Override",
-                                description: "Manually swap assigned personnel between teams or with unassigned individuals",
-                                status: "research"
-                            }
-
-                            // Configurable Qualifications
-                            FeatureCard {
-                                icon: "⚙️",
-                                title: "Custom Qualification Rules",
-                                description: "Define composite qualifications (e.g., 200 CDI = 210 CDI AND 220 CDI)",
-                                status: "research"
-                            }
-
-                            // Multiple Squadrons
                             FeatureCard {
                                 icon: "🏢",
                                 title: "Multi-Squadron Support",
@@ -102,23 +69,19 @@ pub fn ProductRoadmap() -> Element {
                                 status: "in-progress"
                             }
 
-                            // Trading System
+                            // PLANNED (Near-term)
                             FeatureCard {
-                                icon: "🤝",
-                                title: "Inter-Command Trading",
-                                description: "Propose personnel trades between commands to address shortfalls",
-                                status: "research"
+                                icon: "📊",
+                                title: "Results Export",
+                                description: "Export assignment results to CSV and Excel formats for further analysis",
+                                status: "planned"
                             }
-
-                            // Time-based Analysis
                             FeatureCard {
                                 icon: "📅",
                                 title: "Temporal Analysis",
                                 description: "Track requirements and shortfalls over time",
                                 status: "planned"
                             }
-
-                            // What-if Scenarios
                             FeatureCard {
                                 icon: "🔮",
                                 title: "What-If Analysis",
@@ -126,12 +89,42 @@ pub fn ProductRoadmap() -> Element {
                                 status: "planned"
                             }
 
-                            // Aircrew Expansion
+                            // RESEARCH (Complex/Future)
+                            FeatureCard {
+                                icon: "📝",
+                                title: "Live Data Editing",
+                                description: "Edit uploaded data directly in the browser before processing",
+                                status: "research"
+                            }
+                            FeatureCard {
+                                icon: "🔄",
+                                title: "Assignment Override",
+                                description: "Manually swap assigned personnel between teams or with unassigned individuals",
+                                status: "research"
+                            }
+                            FeatureCard {
+                                icon: "⚙️",
+                                title: "Custom Qualification Rules",
+                                description: "Define composite qualifications (e.g., 200 CDI = 210 CDI AND 220 CDI)",
+                                status: "research"
+                            }
+                            FeatureCard {
+                                icon: "💬",
+                                title: "Feedback System",
+                                description: "Built-in comment section for user suggestions and bug reports",
+                                status: "research"
+                            }
+                            FeatureCard {
+                                icon: "🤝",
+                                title: "Inter-Command Trading",
+                                description: "Propose personnel trades between commands to address shortfalls",
+                                status: "research"
+                            }
                             FeatureCard {
                                 icon: "✈️",
                                 title: "Aircrew Module",
                                 description: "Expand to C-130/C-40 aircrew management and crew availability",
-                                status: "planned"
+                                status: "research"
                             }
                         }
                     }
@@ -150,34 +143,39 @@ pub fn ProductRoadmap() -> Element {
                         div {
                             class: "p-6 space-y-4",
 
+                            // MEDIUM PRIORITY
                             IssueCard {
                                 severity: "medium",
                                 title: "TAR/SELRES Classification",
                                 description: "FLTMPS alpha roster may not be the most reliable source for duty status determination",
                                 workaround: "Manual verification recommended for critical assignments"
                             }
-
                             IssueCard {
                                 severity: "medium",
                                 title: "Qualification Standards",
                                 description: "Need definitive rules for standard qualification definitions (100 CDI, 040 SUP, etc.)",
                                 workaround: "Get wing validated standard definitions"
                             }
-
-                            IssueCard {
-                                severity: "low",
-                                title: "Duplicate Qualifications",
-                                description: "Some personnel show duplicate qualification entries",
-                                workaround: "Duplicates are automatically filtered in final output"
-                            }
-
                             IssueCard {
                                 severity: "medium",
                                 title: "Expiration Dates",
                                 description: "System doesn't currently track qualification expiration dates",
                                 workaround: "Ensure all uploaded data reflects current qualifications only"
                             }
+                            IssueCard {
+                                severity: "medium",
+                                title: "File Upload Error Recovery",
+                                description: "If any file fails to parse, users must restart the entire 4-step upload process",
+                                workaround: "Ensure files match expected format before uploading. Use demo files as templates."
+                            }
 
+                            // LOW PRIORITY
+                            IssueCard {
+                                severity: "low",
+                                title: "Duplicate Qualifications",
+                                description: "Some personnel show duplicate qualification entries",
+                                workaround: "Duplicates are automatically filtered in final output"
+                            }
                             IssueCard {
                                 severity: "low",
                                 title: "Browser Memory Limits",
@@ -235,22 +233,6 @@ pub fn ProductRoadmap() -> Element {
                 //     }
                 // }
 
-                // // Contact Section
-                // div {
-                //     class: "mt-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-8 text-center",
-                //     h3 {
-                //         class: "text-xl font-bold text-gray-900 mb-3",
-                //         "Have suggestions or found a bug?"
-                //     }
-                //     p {
-                //         class: "text-gray-600 mb-4",
-                //         "Your feedback helps make RoboAMO better for everyone"
-                //     }
-                //     button {
-                //         class: "px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors",
-                //         "Contact Development Team"
-                //     }
-                // }
                 Footer {}
             }
         }

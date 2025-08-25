@@ -79,12 +79,54 @@ pub fn Hero() -> Element {
                 }
             }
 
+            // Why RoboAMO Section
+            div {
+                class: "mt-8 py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white to-gray-50 max-w-7xl mx-auto",
+                div {
+                    class: "mb-12",
+                    h2 { class: "text-3xl md:text-4xl font-bold text-gray-900 mb-4", "Why RoboAMO?" }
+                    p { class: "text-lg md:text-xl text-gray-600 max-w-2xl",
+                        "Data-driven personnel decisions that enhance mission readiness"
+                    }
+                }
+
+                div {
+                    class: "grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-6xl mx-auto",
+                    div {
+                        class: "bg-white rounded-xl p-6 shadow-md",
+                        h4 { class: "font-bold text-gray-900 mb-3 text-lg", "Operational Questions" }
+                        p { class: "text-gray-600 mb-3", "Have you ever asked yourself:" }
+                        ul {
+                            class: "list-disc list-inside space-y-1 text-sm text-gray-600 leading-relaxed ml-4",
+                            li { "Can we support a day and night check?" }
+                            li { "Can we handle a dedicated line shack?" }
+                            li { "What if we had to man an additional det tomorrow?" }
+                            li { "Do we have the personnel for a dedicated phase shop?" }
+                            li { "Should we prioritize CDI training based on gaps?" }
+                        }
+                    }
+                    div {
+                        class: "bg-white rounded-xl p-6 shadow-md",
+                        h4 { class: "font-bold text-gray-900 mb-3 text-lg", "Strategic Benefits" }
+                        p { class: "text-gray-600 mb-3", "RoboAMO helps leaders:" }
+                        ul {
+                            class: "list-disc list-inside space-y-1 text-sm text-gray-600 leading-relaxed ml-4",
+                            li { "Reduce assignment planning time from days to minutes" }
+                            li { "Make data-driven decisions for strategic workforce planning" }
+                            li { "Prevent mission-critical manning gaps before they occur" }
+                            li { "Optimize personnel utilization and operational readiness" }
+                            li { "Identify training gaps months ahead of critical shortfalls" }
+                        }
+                    }
+                }
+            }
+
             // How It Works Section
             div {
                 id: "how-it-works",
                 class: "how-it-works py-16 md:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto scroll-mt-16",
-                h2 { class: "section-title text-3xl md:text-4xl font-bold text-gray-900 text-center mb-4", "How It Works" }
-                p { class: "section-subtitle text-lg md:text-xl text-gray-600 text-center mb-12 max-w-2xl mx-auto",
+                h2 { class: "section-title text-3xl md:text-4xl font-bold text-gray-900 mb-4", "How It Works" }
+                p { class: "section-subtitle text-lg md:text-xl text-gray-600 mb-12 max-w-2xl",
                     "Four simple uploads provide comprehensive manning insights"
                 }
 
@@ -143,11 +185,11 @@ pub fn Hero() -> Element {
 
             // Methodology Section
             div {
-                class: "methodology-section py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white to-gray-50",
+                class: "methodology-section py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white to-gray-50 max-w-7xl mx-auto",
                 div {
-                    class: "methodology-header text-center mb-12 max-w-4xl mx-auto",
+                    class: "methodology-header mb-12",
                     h2 { class: "section-title text-3xl md:text-4xl font-bold text-gray-900 mb-4", "Intelligent Optimization" }
-                    p { class: "section-subtitle text-lg md:text-xl text-gray-600 max-w-2xl mx-auto",
+                    p { class: "section-subtitle text-lg md:text-xl text-gray-600 max-w-2xl",
                         "Advanced algorithm maximizes readiness while respecting operational constraints"
                     }
                 }
