@@ -85,7 +85,7 @@ pub fn Results() -> Element {
                 .collect();
             (team, team_assignments)
         })
-        .filter(|(_, team_assignments)| !team_assignments.is_empty())
+        //.filter(|(_, team_assignments)| !team_assignments.is_empty())
         .collect::<Vec<_>>()
         .into_iter()
         .sorted_by_key(|(_, team_assignments)| team_assignments.len())
@@ -200,30 +200,31 @@ pub fn Results() -> Element {
                                                 }
                                             }
                                         }
+                                        // rows for missing quals
+                                        for missing in assignments.unfilled_positions.iter()
+                                            .filter(|(team_name,_)| team_name == &team.name) {
+                                                tr {
+                                                    class: "table-row bg-red-50",
+                                                    td {
+                                                        class: "table-cell-name text-red-600 text-center",
+                                                        span { class: "text-xl mr-2", "⚠️" }
+                                                        //span { class: "font-semibold", "MISSING" }
+                                                    }
+                                                    td { class: "table-cell-muted text-red-400", "-" }
+                                                    td {
+                                                        class: "table-cell",
+                                                        span {
+                                                            class: "role-badge bg-red-100 text-red-800",
+                                                            "{missing.1}"
+                                                        }
+                                                    }
+                                                    td { class: "table-cell-muted text-red-400", "-" }
+                                                    td { class: "table-cell-muted text-red-400", "-" }
+                                                }
+                                            }
+                                        }
                                     }
                                 }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Unfilled Positions
-            if !assignments.unfilled_positions.is_empty() {
-                div {
-                    class: "section-card",
-                    h2 {
-                        class: "section-title-warning",
-                        "⚠️ Unfilled Positions"
-                    }
-
-                    div {
-                        class: "unfilled-grid",
-                        for (team_name, qualification) in &assignments.unfilled_positions {
-                            div {
-                                class: "unfilled-card",
-                                h4 { class: "unfilled-team", "{team_name}" }
-                                p { class: "unfilled-qual", "{qualification}" }
                             }
                         }
                     }
@@ -314,7 +315,6 @@ pub fn Results() -> Element {
             }
         }
     }
-}
 
 #[component]
 pub fn People() -> Element {

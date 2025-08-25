@@ -249,7 +249,9 @@ pub fn build_assignment_plan(
                 .filter(|a| a.qualification == position.qualification && a.team == team.name)
                 .count();
             if have < req {
-                unfilled_positions.push((team.name.clone(), position.qualification.clone()))
+                for _ in 0..(req - have) {
+                    unfilled_positions.push((team.name.clone(), position.qualification.clone()))
+                }
             }
         }
     }
