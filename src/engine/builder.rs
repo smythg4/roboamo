@@ -17,13 +17,6 @@ pub struct AssignmentResult {
     pub flow_assignments: Vec<FlowAssignment>,
 }
 
-static NAME_REGEX: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(
-        r"^[a-zA-Z]+\s*[a-zA-Z]*\s*[a-zA-Z]*,\s+[a-zA-Z]*\s+[a-zA-Z]*\s*[a-zA-Z]*\s+[A-Z0-9]+\s*$",
-    )
-    .expect("Invalid NAME_REGEX pattern")
-});
-
 static SUPPLY_REGEX: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"^[a-zA-Z,\s]*\sLS+[a-zA-Z0-9]$").expect("Invalid SUPPLY_REGEX pattern")
 });

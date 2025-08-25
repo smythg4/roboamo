@@ -48,7 +48,12 @@ pub fn ProductRoadmap() -> Element {
                                 description: "Downloadable CSV and XSLX templates with proper formatting and examples",
                                 status: "complete"
                             }
-
+                            FeatureCard {
+                                icon: "💾",
+                                title: "Memory Architecture Optimization",
+                                description: "Streamlined data structures and parsing workflows",
+                                status: "complete"
+                            }
                             // User Feedback
                             FeatureCard {
                                 icon: "💬",
@@ -62,7 +67,7 @@ pub fn ProductRoadmap() -> Element {
                                 icon: "🔍",
                                 title: "Smart Search",
                                 description: "Quick search across all data to validate specific personnel",
-                                status: "research"
+                                status: "complete"
                             }
 
                             // In-Browser Editing
@@ -78,7 +83,7 @@ pub fn ProductRoadmap() -> Element {
                                 icon: "🏢",
                                 title: "Multi-Squadron Support",
                                 description: "Manage multiple squadrons with executive dashboard views",
-                                status: "planned"
+                                status: "in-progress"
                             }
 
                             // Trading System
@@ -159,9 +164,9 @@ pub fn ProductRoadmap() -> Element {
 
                             IssueCard {
                                 severity: "low",
-                                title: "FLTMPS Parsing Artifacts",
-                                description: "Minor formatting issues in FLTMPS data parsing",
-                                workaround: "Artifacts don't affect final assignments"
+                                title: "Browser Memory Limits",
+                                description: "Large multi-squadron files may approach browser memory limits",
+                                workaround: "Current single-squadron usage well within safe limits. Multi-squadron batching planned."
                             }
                         }
                     }
@@ -244,6 +249,7 @@ fn FeatureCard(
     status: &'static str,
 ) -> Element {
     let status_class = match status {
+        "complete" => "bg-green-100 text-green-700",
         "planned" => "bg-gray-100 text-gray-700",
         "in-progress" => "bg-blue-100 text-blue-700",
         "research" => "bg-purple-100 text-purple-700",
@@ -251,6 +257,7 @@ fn FeatureCard(
     };
 
     let status_label = match status {
+        "complete" => "Complete",
         "planned" => "Planned",
         "in-progress" => "In Progress",
         "research" => "Research",

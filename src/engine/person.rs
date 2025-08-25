@@ -1,7 +1,7 @@
 use chrono::NaiveDate;
 use std::fmt::{Display, Formatter};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Person {
     // you can privatize this later
     pub name: String,

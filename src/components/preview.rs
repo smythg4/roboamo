@@ -262,104 +262,135 @@ pub fn QualDefPreview(data: Rc<Vec<u8>>) -> Element {
 
 #[component]
 pub fn ASMPreview(data: Rc<Vec<u8>>) -> Element {
-    match parse_asm_file(data) {
-        Ok(people) => {
-            let total_people = people.len();
-            let total_quals: usize = people
-                .iter()
-                .map(|person| person.qualifications.len())
-                .sum();
+    let mut search_term = use_signal(|| String::new());
+    
+    let people_resource = use_resource(move || {
+        let data = data.clone();
+        async move { parse_asm_file(data) }
+    });
 
-            rsx! {
+    let people = match &*people_resource.read() {
+        Some(Ok(all_people)) => {
+            let term = search_term.read().clone();
+            let filtered_people: Vec<_> = all_people.iter()
+                .filter(|p| {
+                    let term_lower = term.to_lowercase();
+                    p.name.to_lowercase().contains(&term_lower) ||
+                    p.qualifications.iter().any(|q| q.to_lowercase().contains(&term_lower))
+                })
+                .cloned()
+                .collect();
+            filtered_people
+        },
+        Some(Err(e)) => return rsx! {
+            div {
+                class: "bg-red-50 border border-red-200 rounded-lg p-4",
+                p {
+                    class: "text-sm text-red-700",
+                    "Error reading file: {e}"
+                }
+            }
+        },
+        None => {
+            return rsx!{ div { "Loading..."} }
+        },
+    };
+
+    let total_people = people.len();
+    let total_quals: usize = people
+        .iter()
+        .map(|person| person.qualifications.len())
+        .sum();
+
+    rsx! {
+        div {
+            class: "space-y-4",
+
+            // Summary card
+            div {
+                class: "bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-4 border border-purple-200",
                 div {
-                    class: "space-y-4",
-
-                    // Summary card
+                    class: "flex items-center justify-between",
                     div {
-                        class: "bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-4 border border-purple-200",
+                        h3 {
+                            class: "text-lg font-semibold text-gray-900",
+                            "ASM Personnel Data"
+                        }
                         div {
-                            class: "flex items-center justify-between",
-                            div {
-                                h3 {
-                                    class: "text-lg font-semibold text-gray-900",
-                                    "ASM Personnel Data"
-                                }
-                                div {
-                                    class: "flex gap-4 mt-1",
-                                    p {
-                                        class: "text-sm text-gray-600",
-                                        span { class: "font-semibold", "{total_people}" }
-                                        " personnel"
-                                    }
-                                    p {
-                                        class: "text-sm text-gray-600",
-                                        span { class: "font-semibold", "{total_quals}" }
-                                        " total qualifications"
-                                    }
-                                }
+                            class: "flex gap-4 mt-1",
+                            p {
+                                class: "text-sm text-gray-600",
+                                span { class: "font-semibold", "{total_people}" }
+                                " personnel"
                             }
-                            div {
-                                class: "text-3xl",
-                                "👤"
+                            p {
+                                class: "text-sm text-gray-600",
+                                span { class: "font-semibold", "{total_quals}" }
+                                " total qualifications"
                             }
                         }
                     }
-
-                    // Search/filter bar (placeholder for future functionality)
                     div {
-                        class: "bg-white rounded-lg shadow-sm border border-gray-200 p-4",
-                        input {
-                            r#type: "search",
-                            placeholder: "Search personnel... (coming soon)",
-                            disabled: true,
-                            class: "w-full px-4 py-2 text-sm border border-gray-300 rounded-lg bg-gray-50 cursor-not-allowed",
-                        }
+                        class: "text-3xl",
+                        "👤"
                     }
+                }
+            }
 
-                    // Personnel list
-                    div {
-                        class: "bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden",
-                        div {
-                            class: "max-h-96 overflow-auto",
-                            table {
-                                class: "min-w-full divide-y divide-gray-200",
-                                thead {
-                                    class: "bg-gray-50 sticky top-0 z-10",
-                                    tr {
-                                        th {
-                                            class: "px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-80",
-                                            "Name"
-                                        }
-                                        th {
-                                            class: "px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider",
-                                            "Qualifications"
+            // Search/filter bar (placeholder for future functionality)
+            div {
+                class: "bg-white rounded-lg shadow-sm border border-gray-200 p-4",
+                input {
+                    r#type: "search",
+                    placeholder: "Search personnel by name or qual...",
+                    disabled: false,
+                    class: "w-full px-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+                    oninput: move |evt| search_term.set(evt.value()),
+                }
+            }
+
+            // Personnel list
+            div {
+                class: "bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden",
+                div {
+                    class: "max-h-96 overflow-auto",
+                    table {
+                        class: "min-w-full divide-y divide-gray-200",
+                        thead {
+                            class: "bg-gray-50 sticky top-0 z-10",
+                            tr {
+                                th {
+                                    class: "px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-80",
+                                    "Name"
+                                }
+                                th {
+                                    class: "px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider",
+                                    "Qualifications"
+                                }
+                            }
+                        }
+                        tbody {
+                            class: "bg-white divide-y divide-gray-200",
+                            for person in people {
+                                tr {
+                                    class: "hover:bg-gray-50 transition-colors duration-150",
+                                    td {
+                                        class: "px-4 py-3 text-sm font-medium text-gray-900 w-80 max-w-xs",
+                                        div {
+                                            class: "truncate",
+                                            title: "{person.name}",
+                                            {person.name.clone()}
                                         }
                                     }
-                                }
-                                tbody {
-                                    class: "bg-white divide-y divide-gray-200",
-                                    for person in people {
-                                        tr {
-                                            class: "hover:bg-gray-50 transition-colors duration-150",
-                                            td {
-                                                class: "px-4 py-3 text-sm font-medium text-gray-900 w-80 max-w-xs",
-                                                div {
-                                                    class: "truncate",
-                                                    title: "{person.name}",
-                                                    {person.name.clone()}
-                                                }
-                                            }
-                                            td {
-                                                class: "px-4 py-3",
-                                                div {
-                                                    class: "flex flex-wrap gap-1 max-w-full",
-                                                    for qual in person.qualifications {
-                                                        span {
-                                                            class: "inline-block px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-100 text-indigo-800 max-w-[200px] truncate",
-                                                            title: "{qual}",
-                                                            {qual.clone()}
-                                                        }
-                                                    }
+                                    td {
+                                        class: "px-4 py-3",
+                                        div {
+                                            class: "flex flex-wrap gap-1 max-w-full",
+                                            for qual in person.qualifications {
+                                                span {
+                                                    class: "inline-block px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-100 text-indigo-800 max-w-[200px] truncate",
+                                                    title: "{qual}",
+                                                    {qual.clone()}
                                                 }
                                             }
                                         }
@@ -371,17 +402,7 @@ pub fn ASMPreview(data: Rc<Vec<u8>>) -> Element {
                 }
             }
         }
-        Err(e) => {
-            rsx! {
-                div {
-                    class: "bg-red-50 border border-red-200 rounded-lg p-4",
-                    p {
-                        class: "text-sm text-red-700",
-                        "Error reading file: {e}"
-                    }
-                }
-            }
-        }
+
     }
 }
 
