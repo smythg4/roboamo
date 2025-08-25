@@ -93,7 +93,7 @@ pub fn RequirementsPreview(data: Rc<Vec<u8>>) -> Element {
                     // Teams grid
                     div {
                         class: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4",
-                        for (team_name, requirements) in teams {
+                        for team in teams {
                             div {
                                 class: "bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200",
                                 div {
@@ -101,12 +101,12 @@ pub fn RequirementsPreview(data: Rc<Vec<u8>>) -> Element {
                                     h4 {
                                         class: "font-semibold text-gray-900 flex items-center gap-2",
                                         span { "👥" }
-                                        "{team_name}"
+                                        "{team.name}"
                                     }
                                 }
                                 div {
                                     class: "p-4",
-                                    if requirements.is_empty() {
+                                    if team.required_positions.is_empty() {
                                         p {
                                             class: "text-sm text-gray-500 italic",
                                             "No requirements defined"
@@ -114,16 +114,16 @@ pub fn RequirementsPreview(data: Rc<Vec<u8>>) -> Element {
                                     } else {
                                         div {
                                             class: "space-y-2",
-                                            for req in requirements {
+                                            for req in team.required_positions {
                                                 div {
                                                     class: "flex justify-between items-center py-1.5 px-2 rounded hover:bg-gray-50",
                                                     span {
                                                         class: "text-sm font-medium text-gray-700",
-                                                        "{req.qual_name}"
+                                                        "{req.qualification}"
                                                     }
                                                     span {
                                                         class: "inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 text-xs font-bold text-blue-700 bg-blue-100 rounded-full",
-                                                        "{req.qual_qty}"
+                                                        "{req.count}"
                                                     }
                                                 }
                                             }

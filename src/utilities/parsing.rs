@@ -2,6 +2,7 @@ use anyhow::anyhow;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::rc::Rc;
+use crate::engine::team::{Team, Position};
 
 // everything related to qualification footprint requirements
 
@@ -15,21 +16,26 @@ pub struct Requirement {
     pub qual_qty: usize,
 }
 
-pub type Teams = HashMap<String, Vec<Requirement>>;
-
-pub fn parse_requirements(data: Rc<Vec<u8>>) -> Result<Teams, Box<dyn std::error::Error>> {
-    let mut teams = Teams::new();
+pub fn parse_requirements(data: Rc<Vec<u8>>) -> Result<Vec<Team>, Box<dyn std::error::Error>> {
+    let mut teams = HashMap::new();
     let mut rdr = csv::Reader::from_reader(&data[..]);
 
     for record in rdr.deserialize() {
         let record: Requirement = record?;
-        teams
+        let team = teams
             .entry(record.team_name.clone())
-            .or_default()
-            .push(record);
+            .or_insert( Team {
+                name: record.team_name.clone(),
+                required_positions: Vec::new(),
+            });
+        let position = Position {
+            qualification: record.qual_name.clone(),
+            count: record.qual_qty,
+        };
+        (*team).required_positions.push(position);
     }
 
-    Ok(teams)
+    Ok(teams.into_values().collect())
 }
 
 // everything dealing with translating ASM to common qual names
