@@ -265,7 +265,10 @@ pub fn ASMPreview(data: Rc<Vec<u8>>) -> Element {
     match parse_asm_file(data) {
         Ok(people) => {
             let total_people = people.len();
-            let total_quals: usize = people.values().map(|quals| quals.len()).sum();
+            let total_quals: usize = people
+                .iter()
+                .map(|person| person.qualifications.len())
+                .sum();
 
             rsx! {
                 div {
@@ -335,22 +338,22 @@ pub fn ASMPreview(data: Rc<Vec<u8>>) -> Element {
                                 }
                                 tbody {
                                     class: "bg-white divide-y divide-gray-200",
-                                    for (name, asm_quals) in people {
+                                    for person in people {
                                         tr {
                                             class: "hover:bg-gray-50 transition-colors duration-150",
                                             td {
                                                 class: "px-4 py-3 text-sm font-medium text-gray-900 w-80 max-w-xs",
                                                 div {
                                                     class: "truncate",
-                                                    title: "{name}",
-                                                    {name.clone()}
+                                                    title: "{person.name}",
+                                                    {person.name.clone()}
                                                 }
                                             }
                                             td {
                                                 class: "px-4 py-3",
                                                 div {
                                                     class: "flex flex-wrap gap-1 max-w-full",
-                                                    for qual in asm_quals {
+                                                    for qual in person.qualifications {
                                                         span {
                                                             class: "inline-block px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-100 text-indigo-800 max-w-[200px] truncate",
                                                             title: "{qual}",

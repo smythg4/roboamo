@@ -1,11 +1,9 @@
 use crate::engine::assignment::{Assignment, AssignmentPlan, AssignmentSolver, FlowAssignment};
-use crate::engine::person::{DutyStatus, Person};
+use crate::engine::person::Person;
 use crate::engine::team::{Position, Team};
-use crate::utilities::config::ParsedData;
-use crate::utilities::*; // all the parsing logic
+use crate::utilities::config::{ParsedData, AppState};
 use dioxus::prelude::*;
 
-use chrono::NaiveDate;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use std::collections::HashMap;
@@ -76,57 +74,27 @@ pub fn build_people() -> Result<Vec<Person>> {
         .as_ref()
         .context("ASM data not parsed")?;
 
-    let parsed_asm = match parsed_asm {
-        ParsedData::ASM(people) => people,
+    let mut people = match parsed_asm {
+        ParsedData::Personnel(people) => people.clone(),
         _ => bail!("Error extracting ASM data"),
     };
 
-    let parsed_fltmps = files
-        .get("FLTMPS")
-        .context("FLTMPS file not found")?
-        .parsed_data
-        .as_ref()
-        .context("FLTMPS data not parsed")?;
+    let people = Rc::make_mut(&mut people);
 
-    let parsed_fltmps = match parsed_fltmps {
-        ParsedData::FLTMPS(prds) => prds,
-        _ => bail!("Error extracting FLTMPS data"),
-    };
-    let mut people = vec![];
-
-    for (name, quals) in parsed_asm.as_ref() {
-        let nameparts: Vec<&str> = name.split("  ").collect();
-        let name_clean = nameparts
-            .first()
-            .ok_or(anyhow!("Invalid name format: missing name"))?;
-        let raterank = nameparts
-            .get(1)
-            .ok_or(anyhow!("Invalid name format: missing name"))?
-            .trim();
-        let prd = prd_lookup(name_clean, parsed_fltmps);
-        let duty_status = match prd {
-            Some(_) => DutyStatus::TAR,
-            None => DutyStatus::SELRES,
-        };
-        let mut qualifications: Vec<String> = quals
+    for person in people.iter_mut() {
+        person.qualifications = person
+            .qualifications
             .iter()
-            .filter_map(|asm_qual| qual_table.get(asm_qual))
-            .map(|q| q.trim().to_uppercase().to_string())
+            .filter_map(|q| qual_table.get(q))
+            .cloned()
             .collect();
 
-        let mut add_quals = get_derivative_quals(name, &qualifications);
-        qualifications.append(&mut add_quals);
-
-        people.push(Person {
-            name: name_clean.to_string(),
-            raterank: raterank.to_string(),
-            duty_status,
-            qualifications,
-            prd: prd.to_owned(),
-        })
+        let temp_name = format!("{}  {}", &person.name, &person.raterank);
+        let derivative_quals = get_derivative_quals(&temp_name, &person.qualifications);
+        person.qualifications.extend(derivative_quals);
     }
 
-    Ok(people)
+    Ok(people.clone())
 }
 
 fn is_supply(name: &str) -> bool {
@@ -212,32 +180,6 @@ fn get_derivative_quals(name: &str, quals: &[String]) -> Vec<String> {
     }
 
     extra_quals
-}
-
-fn prd_lookup(name: &str, prds: &HashMap<String, Option<NaiveDate>>) -> Option<NaiveDate> {
-    // probably will need to .to_lower() everything...
-
-    //println!("Looking up {} in prd table...", name);
-    let parts: Vec<&str> = name.splitn(2, ", ").collect();
-    if let [last_name, rest] = parts.as_slice() {
-        //println!("Last name is {}", last_name);
-        let matches: Vec<&String> = prds.keys().filter(|n| n.starts_with(last_name)).collect();
-        if matches.len() == 1 {
-            return prds[matches[0]];
-        } else if matches.len() > 1 {
-            //println!("Found multiple matches: {:?}", matches);
-            let first_name = rest.split(' ').next().unwrap_or(rest);
-            //println!("First name is: {}", first_name);
-            let full_name = [last_name, first_name].join(" ");
-            //println!("Full name would be... {}", full_name);
-            let matches: Vec<&String> = prds.keys().filter(|n| n.starts_with(&full_name)).collect();
-            if matches.len() == 1 {
-                return prds[matches[0]];
-            }
-        }
-    }
-
-    None
 }
 
 fn build_teams() -> Result<Vec<Team>> {

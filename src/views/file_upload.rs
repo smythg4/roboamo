@@ -1,7 +1,8 @@
 use crate::components::Preview;
 use crate::utilities::config::{AppState, ParsedData};
 use crate::utilities::{
-    parse_asm_file, parse_fltmps_file, parse_qual_defs, parse_requirements, PreviewType,
+    enhance_personnel_with_prd, parse_asm_file, parse_fltmps_file, parse_qual_defs,
+    parse_requirements, PreviewType,
 };
 use crate::views::ErrorDisplay;
 use crate::Route;
@@ -327,28 +328,55 @@ pub fn FileUpload(page: String) -> Element {
                                         onclick: move |_| {
                                             let page = page_for_onclick.clone();
 
-                                            if let Some(entry) = app_state.write().files.get_mut(&page) {
-                                                if let Some(file) = &entry.file_content {
-                                                    let file = file.clone();
-                                                    let parsed_data = match entry.preview_type {
-                                                        PreviewType::Requirements => parse_requirements(file).ok()
-                                                            .map(Rc::new)
-                                                            .map(ParsedData::Requirements),
-                                                        PreviewType::QualDef => parse_qual_defs(file).ok()
-                                                            .map(Rc::new)
-                                                            .map(ParsedData::QualDefs),
-                                                        PreviewType::ASM => parse_asm_file(file).ok()
-                                                            .map(Rc::new)
-                                                            .map(ParsedData::ASM),
-                                                        PreviewType::FLTMPS => parse_fltmps_file(file).ok()
-                                                            .map(Rc::new)
-                                                            .map(ParsedData::FLTMPS),
-                                                    };
-                                                    entry.parsed_data = parsed_data;
+                                            // Parse the file and store data
+                                            {
+                                                if let Some(entry) = app_state.write().files.get_mut(&page) {
+                                                    if let Some(file) = &entry.file_content {
+                                                        let file = file.clone();
+                                                        let parsed_data = match entry.preview_type {
+                                                            PreviewType::Requirements => parse_requirements(file).ok()
+                                                                .map(Rc::new)
+                                                                .map(ParsedData::Requirements),
+                                                            PreviewType::QualDef => parse_qual_defs(file).ok()
+                                                                .map(Rc::new)
+                                                                .map(ParsedData::QualDefs),
+                                                            PreviewType::ASM => parse_asm_file(file).ok()
+                                                                .map(Rc::new)
+                                                                .map(ParsedData::Personnel),
+                                                            PreviewType::FLTMPS => parse_fltmps_file(file.clone()).ok()
+                                                                .map(Rc::new)
+                                                                .map(ParsedData::FLTMPS)
+                                                        };
+                                                        entry.parsed_data = parsed_data;
+                                                    }
+                                                }
+                                            } // First borrow ends here
+
+                                            // Handle FLTMPS enhancement
+                                            if page == "FLTMPS" {
+                                                let mut app_state_write = app_state.write();
+
+                                                // First, get the PRD list (immutable borrow)
+                                                let prd_list_clone = app_state_write.files.get("FLTMPS")
+                                                    .and_then(|entry| entry.parsed_data.as_ref())
+                                                    .and_then(|data| match data {
+                                                        ParsedData::FLTMPS(prd_list) => Some(prd_list.as_ref().clone()),
+                                                        _ => None,
+                                                    });
+
+                                                // Then, enhance the ASM data (mutable borrow)
+                                                if let Some(prd_list) = prd_list_clone {
+                                                    if let Some(asm_entry) = app_state_write.files.get_mut("ASM") {
+                                                        if let Some(ParsedData::Personnel(personnel)) = &mut asm_entry.parsed_data {
+                                                            let people = Rc::make_mut(personnel);
+                                                            let _ = enhance_personnel_with_prd(people, prd_list);
+                                                        }
+                                                    }
                                                 }
                                             }
 
                                             if let Some(next) = next_page.clone() {
+                                                app_state.write().clear_all_raw_data();
                                                 nav.push(Route::FileUpload { page: next });
                                             }
                                         },

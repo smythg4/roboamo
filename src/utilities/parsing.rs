@@ -61,11 +61,11 @@ pub fn parse_qual_defs(data: Rc<Vec<u8>>) -> Result<QualTable, Box<dyn std::erro
 // everything dealing with parsing ASM files to display members and their ASM quals
 use calamine::{open_workbook_from_rs, Data, Reader, Xlsx};
 
-pub type PersonnelQuals = HashMap<String, Vec<String>>;
+use crate::engine::person::{DutyStatus, Person};
 
-pub fn parse_asm_file(data: Rc<Vec<u8>>) -> Result<PersonnelQuals, Box<dyn std::error::Error>> {
+pub fn parse_asm_file(data: Rc<Vec<u8>>) -> Result<Vec<Person>, Box<dyn std::error::Error>> {
     let data = data.as_ref();
-    let mut people = PersonnelQuals::new();
+    let mut people: HashMap<String, Person> = HashMap::new();
     let cursor = std::io::Cursor::new(data);
     let mut workbook: Xlsx<_> = open_workbook_from_rs(cursor)?;
     if let Some(Ok(range)) = workbook.worksheet_range_at(0) {
@@ -83,11 +83,21 @@ pub fn parse_asm_file(data: Rc<Vec<u8>>) -> Result<PersonnelQuals, Box<dyn std::
                 .ok_or_else(|| anyhow!("Missing name column at index 3"))?
                 .to_string();
             if !name.is_empty() && !qual.is_empty() {
-                people.entry(name).or_default().push(qual);
+                let mut name_parts = name.split("  ");
+                let name = name_parts.next().unwrap();
+                let raterank = name_parts.last().unwrap_or("");
+                let person = people.entry(name.to_string()).or_insert(Person {
+                    name: name.to_string(),
+                    raterank: raterank.to_string(),
+                    duty_status: DutyStatus::SELRES, // this will be overridden later if needed
+                    qualifications: vec![],
+                    prd: None,
+                });
+                person.qualifications.push(qual);
             }
         }
     }
-    Ok(people)
+    Ok(people.into_values().collect())
 }
 
 // everything dealing with parsing FLTMPS files to display members and their PRDs
@@ -112,6 +122,22 @@ fn data_to_string(data: &Data) -> Cow<'_, str> {
         Data::DateTime(dt) => Cow::Owned(format!("{dt}")),
         _ => Cow::Borrowed(""),
     }
+}
+
+pub fn enhance_personnel_with_prd(
+    people: &mut Vec<Person>,
+    prd_list: PRDList,
+) -> Result<(), Box<dyn std::error::Error>> {
+    for person in people {
+        if let Some(prd) = prd_lookup(&person.name, &prd_list) {
+            person.prd = Some(prd);
+            person.duty_status = DutyStatus::TAR;
+        } else {
+            person.prd = None;
+            person.duty_status = DutyStatus::SELRES;
+        }
+    }
+    Ok(())
 }
 
 pub fn parse_fltmps_file(data: Rc<Vec<u8>>) -> Result<PRDList, Box<dyn std::error::Error>> {
@@ -161,4 +187,23 @@ pub fn parse_fltmps_file(data: Rc<Vec<u8>>) -> Result<PRDList, Box<dyn std::erro
     }
 
     Ok(prds)
+}
+
+fn prd_lookup(name: &str, prds: &HashMap<String, Option<NaiveDate>>) -> Option<NaiveDate> {
+    let parts: Vec<&str> = name.splitn(2, ", ").collect();
+    if let [last_name, rest] = parts.as_slice() {
+        let matches: Vec<&String> = prds.keys().filter(|n| n.starts_with(last_name)).collect();
+        if matches.len() == 1 {
+            return prds[matches[0]];
+        } else if matches.len() > 1 {
+            let first_name = rest.split(' ').next().unwrap_or(rest);
+            let full_name = [last_name, first_name].join(" ");
+            let matches: Vec<&String> = prds.keys().filter(|n| n.starts_with(&full_name)).collect();
+            if matches.len() == 1 {
+                return prds[matches[0]];
+            }
+        }
+    }
+
+    None
 }

@@ -1,4 +1,5 @@
-use crate::utilities::parsing::{PRDList, PersonnelQuals, QualTable, Teams};
+use crate::engine::person::Person;
+use crate::utilities::parsing::{PRDList, QualTable, Teams};
 use std::collections::HashMap;
 use std::rc::Rc;
 
@@ -38,8 +39,8 @@ pub enum PreviewType {
 pub enum ParsedData {
     Requirements(Rc<Teams>),
     QualDefs(Rc<QualTable>),
-    ASM(Rc<PersonnelQuals>),
     FLTMPS(Rc<PRDList>),
+    Personnel(Rc<Vec<Person>>), // Combined ASM + FLTMPS data
 }
 
 #[derive(Debug, Clone)]
@@ -52,6 +53,14 @@ pub struct FileUploadConfig {
     pub next_page: Option<String>,
     pub parsed_data: Option<ParsedData>,
     pub demo_file_path: Option<&'static str>,
+}
+
+impl FileUploadConfig {
+    pub fn clear_raw_data(&mut self) {
+        if self.parsed_data.is_some() {
+            self.file_content = None;
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -92,6 +101,12 @@ impl AppState {
                 .count(),
             PAGES.len(),
         )
+    }
+
+    pub fn clear_all_raw_data(&mut self) {
+        for config in self.files.values_mut() {
+            config.clear_raw_data();
+        }
     }
 }
 
