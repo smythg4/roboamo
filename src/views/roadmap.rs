@@ -119,9 +119,9 @@ pub fn ProductRoadmap() -> Element {
                                 status: "research"
                             }
                             FeatureCard {
-                                icon: "🤝",
-                                title: "Inter-Command Trading",
-                                description: "Propose personnel trades between commands to address shortfalls",
+                                icon: "⚙️",
+                                title: "Configurable Assignment Weights",
+                                description: "Allow user ability to determine how much to 'penalize' someone for SELRES or aircrew status",
                                 status: "research"
                             }
                         }

@@ -161,6 +161,10 @@ impl AssignmentSolver {
             cost += 10_000;
         }
 
+        if !person.raterank.starts_with("A") {
+            cost += 10_000;
+        }
+
         if person.raterank.ends_with("C")
             || person.raterank.ends_with("CS")
             || person.raterank.ends_with("CM")
@@ -170,6 +174,10 @@ impl AssignmentSolver {
 
         if person.raterank.ends_with("CM") {
             cost += 5_000;
+        }
+
+        if person.raterank.ends_with("CMD") {
+            cost += 10_000;
         }
 
         if ["SFF", "Chief", "F/S QAR"].contains(&role_id.qualification.as_str()) {

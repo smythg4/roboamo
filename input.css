@@ -199,7 +199,7 @@
   }
 
   .table-cell {
-    @apply px-4 py-3 text-xs text-gray-900;
+    @apply px-4 py-3 text-center text-xs text-gray-900;
   }
 
   .table-cell-name {
@@ -216,15 +216,15 @@
 
   /* Badges */
   .role-badge {
-    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800;
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-center text-xs font-medium bg-blue-100 text-blue-800;
   }
 
   .status-badge-tar {
-    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800;
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-center text-xs font-medium bg-purple-100 text-purple-800;
   }
 
   .status-badge-selres {
-    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800;
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-center text-xs font-medium bg-gray-100 text-gray-800;
   }
 
   /* Unfilled Positions */

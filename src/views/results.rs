@@ -206,7 +206,7 @@ pub fn Results() -> Element {
                                                 tr {
                                                     class: "table-row bg-red-50",
                                                     td {
-                                                        class: "table-cell-name text-red-600 text-center",
+                                                        class: "table-cell-name text-red-600",
                                                         span { class: "text-xl mr-2", "⚠️" }
                                                         //span { class: "font-semibold", "MISSING" }
                                                     }
