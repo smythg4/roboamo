@@ -186,29 +186,21 @@ fn build_teams() -> Result<Vec<Team>> {
     let app_state = use_context::<Signal<AppState>>();
     let files = &app_state.read().files;
 
-    let parsed_requirements = match files.get("Requirements") {
-        Some(file_config) => match &file_config.parsed_data {
-            Some(ParsedData::Requirements(data)) => data,
-            _ => panic!(),
-        },
-        None => panic!(),
+    let parsed_requirements = files
+        .get("Requirements")
+        .context("Requirements file not found")?
+        .parsed_data
+        .as_ref()
+        .context("Requirements file not parsed")?;
+
+    let mut teams = match parsed_requirements {
+        ParsedData::Requirements(teams) => teams.clone(),
+        _ => bail!("Error extracting requirements data"),
     };
 
-    let mut teams = vec![];
-    for (team_name, requirements) in parsed_requirements.as_ref() {
-        teams.push(Team {
-            name: team_name.clone(),
-            required_positions: requirements
-                .iter()
-                .map(|r| Position {
-                    qualification: r.qual_name.clone(),
-                    count: r.qual_qty,
-                })
-                .collect(),
-        });
-    }
+    let teams = Rc::make_mut(&mut teams);
 
-    Ok(teams)
+    Ok(teams.clone())
 }
 
 pub fn generate_assignments() -> Result<AssignmentResult> {

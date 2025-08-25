@@ -1,5 +1,6 @@
 use crate::engine::person::Person;
-use crate::utilities::parsing::{PRDList, QualTable, Teams};
+use crate::engine::team::Team;
+use crate::utilities::parsing::{PRDList, QualTable};
 use std::collections::HashMap;
 use std::rc::Rc;
 
@@ -37,7 +38,7 @@ pub enum PreviewType {
 
 #[derive(Debug, Clone)]
 pub enum ParsedData {
-    Requirements(Rc<Teams>),
+    Requirements(Rc<Vec<Team>>),
     QualDefs(Rc<QualTable>),
     FLTMPS(Rc<PRDList>),
     Personnel(Rc<Vec<Person>>), // Combined ASM + FLTMPS data
