@@ -284,7 +284,7 @@ pub fn ASMPreview(data: Rc<Vec<u8>>) -> Element {
                 .cloned()
                 .collect();
             filtered_people
-        }
+        },
         Some(Err(e)) => {
             return rsx! {
                 div {
@@ -295,7 +295,7 @@ pub fn ASMPreview(data: Rc<Vec<u8>>) -> Element {
                     }
                 }
             }
-        }
+        },
         None => return rsx! { div { "Loading..."} },
     };
 
@@ -340,7 +340,7 @@ pub fn ASMPreview(data: Rc<Vec<u8>>) -> Element {
                 }
             }
 
-            // Search/filter bar (placeholder for future functionality)
+            // Search/filter bar
             div {
                 class: "bg-white rounded-lg shadow-sm border border-gray-200 p-4",
                 input {
@@ -411,157 +411,186 @@ pub fn ASMPreview(data: Rc<Vec<u8>>) -> Element {
 
 #[component]
 pub fn FLTMPSPreview(data: Rc<Vec<u8>>) -> Element {
-    match parse_fltmps_file(data) {
-        Ok(prds) => {
-            let total_personnel = prds.len();
-            let with_prd = prds.values().filter(|prd| prd.is_some()).count();
-            let selres = total_personnel - with_prd;
+    let mut search_term = use_signal(|| String::new());
 
-            rsx! {
-                div {
-                    class: "space-y-4",
+    let fltmps_resource = use_resource(move || {
+        let data = data.clone();
+        async move { parse_fltmps_file(data) }
+    });
 
-                    // Summary cards
-                    div {
-                        class: "grid grid-cols-1 md:grid-cols-3 gap-4",
-                        div {
-                            class: "bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg p-4 border border-blue-200",
-                            div {
-                                class: "flex items-center justify-between",
-                                div {
-                                    p {
-                                        class: "text-sm text-gray-600",
-                                        "Total Personnel"
-                                    }
-                                    p {
-                                        class: "text-2xl font-bold text-gray-900",
-                                        "{total_personnel}"
-                                    }
-                                }
-                                span { class: "text-2xl", "👥" }
-                            }
-                        }
-                        div {
-                            class: "bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 border border-green-200",
-                            div {
-                                class: "flex items-center justify-between",
-                                div {
-                                    p {
-                                        class: "text-sm text-gray-600",
-                                        "TAR Personnel"
-                                    }
-                                    p {
-                                        class: "text-2xl font-bold text-gray-900",
-                                        "{with_prd}"
-                                    }
-                                }
-                                span { class: "text-2xl", "🎖️" }
-                            }
-                        }
-                        div {
-                            class: "bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg p-4 border border-amber-200",
-                            div {
-                                class: "flex items-center justify-between",
-                                div {
-                                    p {
-                                        class: "text-sm text-gray-600",
-                                        "SELRES Personnel"
-                                    }
-                                    p {
-                                        class: "text-2xl font-bold text-gray-900",
-                                        "{selres}"
-                                    }
-                                }
-                                span { class: "text-2xl", "📅" }
-                            }
-                        }
-                    }
-
-                    // PRD table
-                    div {
-                        class: "bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden",
-                        div {
-                            class: "px-6 py-3 bg-gray-50 border-b border-gray-200",
-                            h3 {
-                                class: "text-sm font-semibold text-gray-700 uppercase tracking-wider",
-                                "Projected Rotation Dates"
-                            }
-                        }
-                        div {
-                            class: "max-h-96 overflow-y-auto",
-                            table {
-                                class: "w-full table-fixed",
-                                thead {
-                                    class: "bg-gray-50",
-                                    tr {
-                                        th {
-                                            class: "px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/2",
-                                            "Name"
-                                        }
-                                        th {
-                                            class: "px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4",
-                                            "PRD"
-                                        }
-                                        th {
-                                            class: "px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4",
-                                            "Status"
-                                        }
-                                    }
-                                }
-                                tbody {
-                                    class: "bg-white divide-y divide-gray-200 text-sm",
-                                    for (name, prd) in prds {
-                                        tr {
-                                            class: "hover:bg-gray-50 transition-colors duration-150",
-                                            td {
-                                                class: "px-4 py-2 text-gray-900 truncate",
-                                                title: "{name}",
-                                                {name.clone()}
-                                            }
-                                            td {
-                                                class: "px-4 py-2 text-gray-600",
-                                                if let Some(date) = prd {
-                                                    span {
-                                                        class: "font-mono text-sm",
-                                                        {date.to_string()}
-                                                    }
-                                                } else {
-                                                    span {
-                                                        class: "text-gray-400 italic",
-                                                        "—"
-                                                    }
-                                                }
-                                            }
-                                            td {
-                                                class: "px-4 py-2",
-                                                if prd.is_some() {
-                                                    span {
-                                                        class: "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800",
-                                                        "TAR"
-                                                    }
-                                                } else {
-                                                    span {
-                                                        class: "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800",
-                                                        "SELRES"
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        Err(e) => {
-            rsx! {
+    let prds = match &*fltmps_resource.read() {
+        Some(Ok(all_prds)) => {
+            let term = search_term.read().clone();
+            let filtered_prds: Vec<_> = all_prds
+                .iter()
+                .filter(|(name, _)| {
+                    let term_lower = term.to_lowercase();
+                    name.to_lowercase().contains(&term_lower)
+                })
+                .map(|(name, date)| (name.clone(), date.clone()))
+                .collect();
+            filtered_prds
+        },
+        Some(Err(e)) => {
+            return rsx! {
                 div {
                     class: "bg-red-50 border border-red-200 rounded-lg p-4",
                     p {
                         class: "text-sm text-red-700",
                         "Error reading file: {e}"
+                    }
+                }
+            }
+        },
+        None => return rsx! { div { "Loading..."} },
+    };
+
+    let total_personnel = prds.len();
+    let with_prd = prds.iter().filter(|(_,prd )| prd.is_some()).count();
+    let selres = total_personnel - with_prd;
+
+    rsx! {
+        div {
+            class: "space-y-4",
+
+            // Summary cards
+            div {
+                class: "grid grid-cols-1 md:grid-cols-3 gap-4",
+                div {
+                    class: "bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg p-4 border border-blue-200",
+                    div {
+                        class: "flex items-center justify-between",
+                        div {
+                            p {
+                                class: "text-sm text-gray-600",
+                                "Total Personnel"
+                            }
+                            p {
+                                class: "text-2xl font-bold text-gray-900",
+                                "{total_personnel}"
+                            }
+                        }
+                        span { class: "text-2xl", "👥" }
+                    }
+                }
+                div {
+                    class: "bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 border border-green-200",
+                    div {
+                        class: "flex items-center justify-between",
+                        div {
+                            p {
+                                class: "text-sm text-gray-600",
+                                "TAR Personnel"
+                            }
+                            p {
+                                class: "text-2xl font-bold text-gray-900",
+                                "{with_prd}"
+                            }
+                        }
+                        span { class: "text-2xl", "🎖️" }
+                    }
+                }
+                div {
+                    class: "bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg p-4 border border-amber-200",
+                    div {
+                        class: "flex items-center justify-between",
+                        div {
+                            p {
+                                class: "text-sm text-gray-600",
+                                "SELRES Personnel"
+                            }
+                            p {
+                                class: "text-2xl font-bold text-gray-900",
+                                "{selres}"
+                            }
+                        }
+                        span { class: "text-2xl", "📅" }
+                    }
+                }
+            }
+            // Search/filter bar
+            div {
+                class: "bg-white rounded-lg shadow-sm border border-gray-200 p-4",
+                input {
+                    r#type: "search",
+                    placeholder: "Search personnel by name or qual...",
+                    disabled: false,
+                    class: "w-full px-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+                    oninput: move |evt| search_term.set(evt.value()),
+                }
+            }
+            // PRD table
+            div {
+                class: "bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden",
+                div {
+                    class: "px-6 py-3 bg-gray-50 border-b border-gray-200",
+                    h3 {
+                        class: "text-sm font-semibold text-gray-700 uppercase tracking-wider",
+                        "Projected Rotation Dates"
+                    }
+                }
+                div {
+                    class: "max-h-96 overflow-y-auto",
+                    table {
+                        class: "w-full table-fixed",
+                        thead {
+                            class: "bg-gray-50",
+                            tr {
+                                th {
+                                    class: "px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/2",
+                                    "Name"
+                                }
+                                th {
+                                    class: "px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4",
+                                    "PRD"
+                                }
+                                th {
+                                    class: "px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4",
+                                    "Status"
+                                }
+                            }
+                        }
+                        tbody {
+                            class: "bg-white divide-y divide-gray-200 text-sm",
+                            for (name, prd) in prds {
+                                tr {
+                                    class: "hover:bg-gray-50 transition-colors duration-150",
+                                    td {
+                                        class: "px-4 py-2 text-gray-900 truncate",
+                                        title: "{name}",
+                                        {name.clone()}
+                                    }
+                                    td {
+                                        class: "px-4 py-2 text-gray-600",
+                                        if let Some(date) = prd {
+                                            span {
+                                                class: "font-mono text-sm",
+                                                {date.to_string()}
+                                            }
+                                        } else {
+                                            span {
+                                                class: "text-gray-400 italic",
+                                                "—"
+                                            }
+                                        }
+                                    }
+                                    td {
+                                        class: "px-4 py-2",
+                                        if prd.is_some() {
+                                            span {
+                                                class: "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800",
+                                                "TAR"
+                                            }
+                                        } else {
+                                            span {
+                                                class: "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800",
+                                                "SELRES"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }

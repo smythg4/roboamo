@@ -54,13 +54,12 @@ pub fn ProductRoadmap() -> Element {
                                 description: "Streamlined data structures and parsing workflows",
                                 status: "complete"
                             }
-
                             // IN PROGRESS
                             FeatureCard {
                                 icon: "🔍",
                                 title: "Smart Search",
-                                description: "Quick search across all data to validate specific personnel -- currently works on ASM preview",
-                                status: "in-progress"
+                                description: "Quick search across all data to validate specific personnel",
+                                status: "complete"
                             }
                             FeatureCard {
                                 icon: "🏢",
@@ -68,8 +67,13 @@ pub fn ProductRoadmap() -> Element {
                                 description: "Manage multiple squadrons with executive dashboard views",
                                 status: "in-progress"
                             }
-
                             // PLANNED (Near-term)
+                            FeatureCard {
+                                icon: "🦺",
+                                title: "Weighted Teams",
+                                description: "Prioritize certain manning priorities over others (e.g. Home Guard is more important than Det)",
+                                status: "planned"
+                            }
                             FeatureCard {
                                 icon: "📊",
                                 title: "Results Export",
@@ -118,12 +122,6 @@ pub fn ProductRoadmap() -> Element {
                                 icon: "🤝",
                                 title: "Inter-Command Trading",
                                 description: "Propose personnel trades between commands to address shortfalls",
-                                status: "research"
-                            }
-                            FeatureCard {
-                                icon: "✈️",
-                                title: "Aircrew Module",
-                                description: "Expand to C-130/C-40 aircrew management and crew availability",
                                 status: "research"
                             }
                         }
@@ -191,53 +189,6 @@ pub fn ProductRoadmap() -> Element {
                         }
                     }
                 }
-
-                // // Timeline Section
-                // div {
-                //     class: "mt-12 bg-white rounded-xl shadow-lg p-8",
-                //     h2 {
-                //         class: "text-2xl font-bold text-gray-900 mb-6 flex items-center",
-                //         span { class: "mr-3 text-3xl", "📍" }
-                //         "Development Timeline"
-                //     }
-
-                //     div {
-                //         class: "relative",
-                //         // Timeline line
-                //         div {
-                //             class: "absolute left-8 top-0 bottom-0 w-0.5 bg-gray-300"
-                //         }
-
-                //         // Timeline items
-                //         TimelineItem {
-                //             date: "Q1 2025",
-                //             title: "Core Functionality",
-                //             description: "Initial release with basic assignment generation",
-                //             completed: true
-                //         }
-
-                //         TimelineItem {
-                //             date: "Q2 2025",
-                //             title: "Enhanced Editing",
-                //             description: "In-browser data editing and validation",
-                //             completed: false
-                //         }
-
-                //         TimelineItem {
-                //             date: "Q3 2025",
-                //             title: "Multi-Squadron",
-                //             description: "Support for multiple squadrons and dashboard views",
-                //             completed: false
-                //         }
-
-                //         TimelineItem {
-                //             date: "Q4 2025",
-                //             title: "Advanced Analytics",
-                //             description: "Temporal analysis and what-if scenarios",
-                //             completed: false
-                //         }
-                //     }
-                // }
 
                 Footer {}
             }
@@ -336,13 +287,15 @@ fn IssueCard(
                         class: "text-sm text-gray-700 mb-2",
                         {description}
                     }
-                    div {
-                        class: "text-xs text-gray-600 italic",
-                        span {
-                            class: "font-semibold",
-                            "Workaround: "
+                    if !workaround.is_empty() {
+                        div {
+                            class: "text-xs text-gray-600 italic",
+                            span {
+                                class: "font-semibold",
+                                "Workaround: "
+                            }
+                            {workaround}
                         }
-                        {workaround}
                     }
                 }
             }

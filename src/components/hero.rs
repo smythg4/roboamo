@@ -225,7 +225,7 @@ pub fn Hero() -> Element {
                         div { class: "methodology-icon text-3xl md:text-4xl mb-3", "⚓" }
                         h4 { class: "methodology-title font-bold text-gray-900 mb-2 text-base md:text-lg", "Leadership Reserve" }
                         p { class: "methodology-desc text-sm text-gray-600 leading-relaxed",
-                            "Junior sailors first"
+                            "Uses senior enlisted last"
                         }
                     }
                 }
