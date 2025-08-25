@@ -172,6 +172,12 @@ pub fn ProductRoadmap() -> Element {
                             // LOW PRIORITY
                             IssueCard {
                                 severity: "low",
+                                title: "Qualification Name Matching",
+                                description: "ASM qualification names must exactly match qualification table entries (spaces, punctuation, etc.)",
+                                workaround: "Verify qual table entries precisely match ASM qualification text. Future fuzzy matching planned."
+                            }
+                            IssueCard {
+                                severity: "low",
                                 title: "Duplicate Qualifications",
                                 description: "Some personnel show duplicate qualification entries",
                                 workaround: "Duplicates are automatically filtered in final output"

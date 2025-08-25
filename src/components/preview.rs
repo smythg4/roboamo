@@ -263,7 +263,7 @@ pub fn QualDefPreview(data: Rc<Vec<u8>>) -> Element {
 #[component]
 pub fn ASMPreview(data: Rc<Vec<u8>>) -> Element {
     let mut search_term = use_signal(|| String::new());
-    
+
     let people_resource = use_resource(move || {
         let data = data.clone();
         async move { parse_asm_file(data) }
@@ -272,28 +272,31 @@ pub fn ASMPreview(data: Rc<Vec<u8>>) -> Element {
     let people = match &*people_resource.read() {
         Some(Ok(all_people)) => {
             let term = search_term.read().clone();
-            let filtered_people: Vec<_> = all_people.iter()
+            let filtered_people: Vec<_> = all_people
+                .iter()
                 .filter(|p| {
                     let term_lower = term.to_lowercase();
-                    p.name.to_lowercase().contains(&term_lower) ||
-                    p.qualifications.iter().any(|q| q.to_lowercase().contains(&term_lower))
+                    p.name.to_lowercase().contains(&term_lower)
+                        || p.qualifications
+                            .iter()
+                            .any(|q| q.to_lowercase().contains(&term_lower))
                 })
                 .cloned()
                 .collect();
             filtered_people
-        },
-        Some(Err(e)) => return rsx! {
-            div {
-                class: "bg-red-50 border border-red-200 rounded-lg p-4",
-                p {
-                    class: "text-sm text-red-700",
-                    "Error reading file: {e}"
+        }
+        Some(Err(e)) => {
+            return rsx! {
+                div {
+                    class: "bg-red-50 border border-red-200 rounded-lg p-4",
+                    p {
+                        class: "text-sm text-red-700",
+                        "Error reading file: {e}"
+                    }
                 }
             }
-        },
-        None => {
-            return rsx!{ div { "Loading..."} }
-        },
+        }
+        None => return rsx! { div { "Loading..."} },
     };
 
     let total_people = people.len();

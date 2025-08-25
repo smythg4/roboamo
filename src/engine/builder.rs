@@ -1,7 +1,7 @@
 use crate::engine::assignment::{Assignment, AssignmentPlan, AssignmentSolver, FlowAssignment};
 use crate::engine::person::Person;
 use crate::engine::team::{Position, Team};
-use crate::utilities::config::{ParsedData, AppState};
+use crate::utilities::config::{AppState, ParsedData};
 use dioxus::prelude::*;
 
 use once_cell::sync::Lazy;

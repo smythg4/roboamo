@@ -172,14 +172,17 @@ pub fn parse_fltmps_file(data: Rc<Vec<u8>>) -> Result<PRDList, Box<dyn std::erro
                 .ok_or_else(|| format!("Row missing name column ({})", name_col))?
                 .clone();
 
-            let looks_like_name = name.chars().all(|c| c.is_alphabetic() || c.is_whitespace() || c == '-')
+            let looks_like_name = name
+                .chars()
+                .all(|c| c.is_alphabetic() || c.is_whitespace() || c == '-')
                 && name.chars().any(|c| c.is_uppercase());
 
-            if name.is_empty() ||
-                name.len() > 60 ||
-                name.split_whitespace().count() > 8 ||
-                name.split_whitespace().count() < 2 ||
-                !looks_like_name {
+            if name.is_empty()
+                || name.len() > 60
+                || name.split_whitespace().count() > 8
+                || name.split_whitespace().count() < 2
+                || !looks_like_name
+            {
                 continue;
             }
 
