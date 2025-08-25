@@ -66,15 +66,31 @@ pub fn ProductRoadmap() -> Element {
                             FeatureCard {
                                 icon: "🔍",
                                 title: "Smart Search",
-                                description: "Quick search across all data to validate specific personnel",
-                                status: "complete"
+                                description: "Quick search across all data to validate specific personnel -- currently works on ASM preview",
+                                status: "in-progress"
                             }
 
                             // In-Browser Editing
                             FeatureCard {
-                                icon: "✏️",
+                                icon: "📝",
                                 title: "Live Data Editing",
                                 description: "Edit uploaded data directly in the browser before processing",
+                                status: "research"
+                            }
+
+                            // Manual Override
+                            FeatureCard {
+                                icon: "🔄",
+                                title: "Assignment Override",
+                                description: "Manually swap assigned personnel between teams or with unassigned individuals",
+                                status: "research"
+                            }
+
+                            // Configurable Qualifications
+                            FeatureCard {
+                                icon: "⚙️",
+                                title: "Custom Qualification Rules",
+                                description: "Define composite qualifications (e.g., 200 CDI = 210 CDI AND 220 CDI)",
                                 status: "research"
                             }
 
