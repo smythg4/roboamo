@@ -1151,6 +1151,9 @@
   .text-indigo-800 {
     color: var(--color-indigo-800);
   }
+  .text-orange-600 {
+    color: var(--color-orange-600);
+  }
   .text-purple-700 {
     color: var(--color-purple-700);
   }
@@ -1174,6 +1177,9 @@
   }
   .text-white {
     color: var(--color-white);
+  }
+  .text-yellow-600 {
+    color: var(--color-yellow-600);
   }
   .text-yellow-700 {
     color: var(--color-yellow-700);

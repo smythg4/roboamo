@@ -284,7 +284,7 @@ pub fn ASMPreview(data: Rc<Vec<u8>>) -> Element {
                 .cloned()
                 .collect();
             filtered_people
-        },
+        }
         Some(Err(e)) => {
             return rsx! {
                 div {
@@ -295,7 +295,7 @@ pub fn ASMPreview(data: Rc<Vec<u8>>) -> Element {
                     }
                 }
             }
-        },
+        }
         None => return rsx! { div { "Loading..."} },
     };
 
@@ -430,7 +430,7 @@ pub fn FLTMPSPreview(data: Rc<Vec<u8>>) -> Element {
                 .map(|(name, date)| (name.clone(), date.clone()))
                 .collect();
             filtered_prds
-        },
+        }
         Some(Err(e)) => {
             return rsx! {
                 div {
@@ -441,12 +441,12 @@ pub fn FLTMPSPreview(data: Rc<Vec<u8>>) -> Element {
                     }
                 }
             }
-        },
+        }
         None => return rsx! { div { "Loading..."} },
     };
 
     let total_personnel = prds.len();
-    let with_prd = prds.iter().filter(|(_,prd )| prd.is_some()).count();
+    let with_prd = prds.iter().filter(|(_, prd)| prd.is_some()).count();
     let selres = total_personnel - with_prd;
 
     rsx! {

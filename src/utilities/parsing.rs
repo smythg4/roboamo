@@ -1,8 +1,8 @@
+use crate::engine::team::{Position, Team};
 use anyhow::anyhow;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::rc::Rc;
-use crate::engine::team::{Team, Position};
 
 // everything related to qualification footprint requirements
 
@@ -22,12 +22,10 @@ pub fn parse_requirements(data: Rc<Vec<u8>>) -> Result<Vec<Team>, Box<dyn std::e
 
     for record in rdr.deserialize() {
         let record: Requirement = record?;
-        let team = teams
-            .entry(record.team_name.clone())
-            .or_insert( Team {
-                name: record.team_name.clone(),
-                required_positions: Vec::new(),
-            });
+        let team = teams.entry(record.team_name.clone()).or_insert(Team {
+            name: record.team_name.clone(),
+            required_positions: Vec::new(),
+        });
         let position = Position {
             qualification: record.qual_name.clone(),
             count: record.qual_qty,

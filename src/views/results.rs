@@ -2,11 +2,11 @@ use crate::engine::assignment::FlowAssignment;
 use crate::engine::builder::{
     build_assignment_plan, build_people, generate_assignments, AssignmentResult,
 };
-use crate::engine::person::DutyStatus;
-use crate::engine::person::Person;
+use crate::engine::person::{DutyStatus, Person};
 use crate::engine::team::Team;
 use crate::utilities::AppState;
 use crate::views::ErrorDisplay;
+use chrono::prelude::*;
 use dioxus::prelude::*;
 use itertools::Itertools;
 use std::rc::Rc;
@@ -90,221 +90,140 @@ pub fn Results() -> Element {
         .into_iter()
         .sorted_by_key(|(_, team_assignments)| team_assignments.len())
         .collect();
-
+    let today = chrono::Utc::now().date_naive();
     rsx! {
+    div {
+        class: "results-container",
+
+        // Header with summary stats
         div {
-            class: "results-container",
-
-            // Header with summary stats
+            class: "results-header",
+            h1 {
+                class: "results-title",
+                "Assignment Results"
+            }
             div {
-                class: "results-header",
-                h1 {
-                    class: "results-title",
-                    "Assignment Results"
+                class: "stats-grid",
+                div {
+                    class: "stat-card-assigned",
+                    h3 { class: "stat-number-green", "{assignments.assignments.len()}" }
+                    p { class: "stat-label-green", "People Assigned" }
                 }
                 div {
-                    class: "stats-grid",
-                    div {
-                        class: "stat-card-assigned",
-                        h3 { class: "stat-number-green", "{assignments.assignments.len()}" }
-                        p { class: "stat-label-green", "People Assigned" }
-                    }
-                    div {
-                        class: "stat-card-unassigned",
-                        h3 { class: "stat-number-yellow", "{assignments.unassigned_people.len()}" }
-                        p { class: "stat-label-yellow", "Unassigned" }
-                    }
-                    div {
-                        class: "stat-card-unfilled",
-                        h3 { class: "stat-number-red", "{assignments.unfilled_positions.len()}" }
-                        p { class: "stat-label-red", "Unfilled Positions" }
-                    }
+                    class: "stat-card-unassigned",
+                    h3 { class: "stat-number-yellow", "{assignments.unassigned_people.len()}" }
+                    p { class: "stat-label-yellow", "Unassigned" }
+                }
+                div {
+                    class: "stat-card-unfilled",
+                    h3 { class: "stat-number-red", "{assignments.unfilled_positions.len()}" }
+                    p { class: "stat-label-red", "Unfilled Positions" }
                 }
             }
+        }
 
-            // Assignments by Team
+        // Assignments by Team
+        div {
+            class: "section-card",
+            h2 {
+                class: "section-title",
+                "Assignments by Team"
+            }
             div {
-                class: "section-card",
-                h2 {
-                    class: "section-title",
-                    "Assignments by Team"
-                }
-                div {
-                    class: "teams-grid",
-                    for (team, team_assignments) in teams_with_assignments {
-                        div {
-                            class: "team-card",
-                            h3 {
-                                class: "team-header",
-                                span { class: "team-icon", "👥" }
-                                "{team.name} ({team_assignments.len()} assigned)"
-                            }
-
-                            div {
-                                class: "table-wrapper",
-                                table {
-                                    class: "results-table",
-                                    thead {
-                                        class: "table-header",
-                                        tr {
-                                            th { class: "table-header-cell", "Name" }
-                                            th { class: "table-header-cell", "Rate/Rank" }
-                                            th { class: "table-header-cell", "Role" }
-                                            th { class: "table-header-cell", "Status" }
-                                            th { class: "table-header-cell", "PRD" }
-                                        }
-                                    }
-                                    tbody {
-                                        for assignment in team_assignments {
-                                            tr {
-                                                class: "table-row",
-                                                td {
-                                                    class: "table-cell-name",
-                                                    "{assignment.person.name}"
-                                                }
-                                                td {
-                                                    class: "table-cell-muted",
-                                                    "{assignment.person.raterank}"
-                                                }
-                                                td {
-                                                    class: "table-cell",
-                                                    span {
-                                                        class: "role-badge",
-                                                        "{assignment.qualification}"
-                                                    }
-                                                }
-                                                td {
-                                                    class: "table-cell",
-                                                    match assignment.person.duty_status {
-                                                        DutyStatus::TAR => rsx! {
-                                                            span {
-                                                                class: "status-badge-tar",
-                                                                "TAR"
-                                                            }
-                                                        },
-                                                        DutyStatus::SELRES => rsx! {
-                                                            span {
-                                                                class: "status-badge-selres",
-                                                                "SELRES"
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                                td {
-                                                    class: "table-cell-muted",
-                                                    if let Some(prd) = assignment.person.prd {
-                                                        "{prd}"
-                                                    } else {
-                                                        "N/A"
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        // rows for missing quals
-                                        for missing in assignments.unfilled_positions.iter()
-                                            .filter(|(team_name,_)| team_name == &team.name) {
-                                                tr {
-                                                    class: "table-row bg-red-50",
-                                                    td {
-                                                        class: "table-cell-name text-red-600",
-                                                        span { class: "text-xl mr-2", "⚠️" }
-                                                        //span { class: "font-semibold", "MISSING" }
-                                                    }
-                                                    td { class: "table-cell-muted text-red-400", "-" }
-                                                    td {
-                                                        class: "table-cell",
-                                                        span {
-                                                            class: "role-badge bg-red-100 text-red-800",
-                                                            "{missing.1}"
-                                                        }
-                                                    }
-                                                    td { class: "table-cell-muted text-red-400", "-" }
-                                                    td { class: "table-cell-muted text-red-400", "-" }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                class: "teams-grid",
+                for (team, team_assignments) in teams_with_assignments {
+                    div {
+                        class: "team-card",
+                        h3 {
+                            class: "team-header",
+                            span { class: "team-icon", "👥" }
+                            "{team.name} ({team_assignments.len()} assigned)"
                         }
-                    }
-                }
-            }
 
-            // Unassigned People
-            if !assignments.unassigned_people.is_empty() {
-                div {
-                    class: "section-card",
-                    h2 {
-                        class: "section-title-alert",
-                        "👤 Unassigned Personnel"
-                    }
-
-                    div {
-                        class: "table-wrapper",
-                        table {
-                            class: "results-table",
-                            thead {
-                                class: "table-header",
-                                tr {
-                                    th { class: "table-header-cell", "Name" }
-                                    th { class: "table-header-cell", "Rate/Rank" }
-                                    th { class: "table-header-cell", "Status" }
-                                    th { class: "table-header-cell", "PRD" }
-                                    th { class: "table-header-cell", "Eligible Roles" }
-                                }
-                            }
-                            tbody {
-                                for person in assignments.unassigned_people.iter()
-                                    .sorted_by(|p, q| Ord::cmp(&q.qualifications.len(), &p.qualifications.len())) {
+                        div {
+                            class: "table-wrapper",
+                            table {
+                                class: "results-table",
+                                thead {
+                                    class: "table-header",
                                     tr {
-                                        class: "table-row",
-                                        td {
-                                            class: "table-cell-name",
-                                            "{person.name}"
-                                        }
-                                        td {
-                                            class: "table-cell-muted",
-                                            "{person.raterank}"
-                                        }
-                                        td {
-                                            class: "table-cell",
-                                            match person.duty_status {
-                                                DutyStatus::TAR => rsx! {
-                                                    span {
-                                                        class: "status-badge-tar",
-                                                        "TAR"
-                                                    }
-                                                },
-                                               DutyStatus::SELRES => rsx! {
-                                                    span {
-                                                        class: "status-badge-selres",
-                                                        "SELRES"
-                                                    }
-                                                },
+                                        th { class: "table-header-cell", "Name" }
+                                        th { class: "table-header-cell", "Rate/Rank" }
+                                        th { class: "table-header-cell", "Role" }
+                                        th { class: "table-header-cell", "Status" }
+                                        th { class: "table-header-cell", "PRD" }
+                                    }
+                                }
+                                tbody {
+                                    for assignment in team_assignments {
+                                        tr {
+                                            class: "table-row",
+                                            td {
+                                                class: "table-cell-name",
+                                                "{assignment.person.name}"
                                             }
-
-                                        }
-                                        td {
-                                            class: "table-cell",
-                                            match person.get_prd() {
-                                                Some(date) => rsx! {
-                                                    span {
-                                                        class: "table-cell-muted",
-                                                        "{date}",
-                                                    }
-                                                },
-                                                None => rsx! {
-                                                    span {
-                                                        class: "table-cell-muted",
-                                                        "-",
+                                            td {
+                                                class: "table-cell-muted",
+                                                "{assignment.person.raterank}"
+                                            }
+                                            td {
+                                                class: "table-cell",
+                                                span {
+                                                    class: "role-badge",
+                                                    "{assignment.qualification}"
+                                                }
+                                            }
+                                            td {
+                                                class: "table-cell",
+                                                match assignment.person.duty_status {
+                                                    DutyStatus::TAR => rsx! {
+                                                        span {
+                                                            class: "status-badge-tar",
+                                                            "TAR"
+                                                        }
+                                                    },
+                                                    DutyStatus::SELRES => rsx! {
+                                                        span {
+                                                            class: "status-badge-selres",
+                                                            "SELRES"
+                                                        }
                                                     }
                                                 }
                                             }
+                                            td {
+                                                class: "table-cell-muted",
+                                                if let Some(prd) = assignment.person.prd {
+                                                    span {
+                                                        class: get_prd_css_class(prd, today),
+                                                        "{prd}"
+                                                    }
+                                                } else {
+                                                    "-"
+                                                }
+                                            }
                                         }
-                                        td {
-                                            class: "table-cell-small",
-                                            "{person.qualifications.join(\", \")}"
+                                    }
+                                    // rows for missing quals
+                                    for missing in assignments.unfilled_positions.iter()
+                                        .filter(|(team_name,_)| team_name == &team.name) {
+                                            tr {
+                                                class: "table-row bg-red-50",
+                                                td {
+                                                    class: "table-cell-name text-red-600",
+                                                    span { class: "text-xl mr-2", "⚠️" }
+                                                    //span { class: "font-semibold", "MISSING" }
+                                                }
+                                                td { class: "table-cell-muted text-red-400", "" }
+                                                td {
+                                                    class: "table-cell",
+                                                    span {
+                                                        class: "role-badge bg-red-100 text-red-800",
+                                                        "{missing.1}"
+                                                    }
+                                                }
+                                                td { class: "table-cell-muted text-red-400", "" }
+                                                td { class: "table-cell-muted text-red-400", "" }
+                                            }
                                         }
                                     }
                                 }
@@ -314,7 +233,104 @@ pub fn Results() -> Element {
                 }
             }
         }
+
+        // Unassigned People
+        if !assignments.unassigned_people.is_empty() {
+            div {
+                class: "section-card",
+                h2 {
+                    class: "section-title-alert",
+                    "👤 Unassigned Personnel"
+                }
+
+                div {
+                    class: "table-wrapper",
+                    table {
+                        class: "results-table",
+                        thead {
+                            class: "table-header",
+                            tr {
+                                th { class: "table-header-cell", "Name" }
+                                th { class: "table-header-cell", "Rate/Rank" }
+                                th { class: "table-header-cell", "Status" }
+                                th { class: "table-header-cell", "PRD" }
+                                th { class: "table-header-cell", "Eligible Roles" }
+                            }
+                        }
+                        tbody {
+                            for person in assignments.unassigned_people.iter()
+                                .sorted_by(|p, q| Ord::cmp(&q.qualifications.len(), &p.qualifications.len())) {
+                                tr {
+                                    class: "table-row",
+                                    td {
+                                        class: "table-cell-name",
+                                        "{person.name}"
+                                    }
+                                    td {
+                                        class: "table-cell-muted",
+                                        "{person.raterank}"
+                                    }
+                                    td {
+                                        class: "table-cell",
+                                        match person.duty_status {
+                                            DutyStatus::TAR => rsx! {
+                                                span {
+                                                    class: "status-badge-tar",
+                                                    "TAR"
+                                                }
+                                            },
+                                           DutyStatus::SELRES => rsx! {
+                                                span {
+                                                    class: "status-badge-selres",
+                                                    "SELRES"
+                                                }
+                                            },
+                                        }
+
+                                    }
+                                    td {
+                                        class: "table-cell",
+                                        match person.get_prd() {
+                                            Some(date) => rsx! {
+                                                span {
+                                                    class: "table-cell-muted",
+                                                    "{date}",
+                                                }
+                                            },
+                                            None => rsx! {
+                                                span {
+                                                    class: "table-cell-muted",
+                                                    "-",
+                                                }
+                                            }
+                                        }
+                                    }
+                                    td {
+                                        class: "table-cell-small",
+                                        "{person.qualifications.join(\", \")}"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
+}
+
+fn get_prd_css_class(prd: chrono::NaiveDate, today: chrono::NaiveDate) -> &'static str {
+    let months_remaining =
+        (prd.year() - today.year()) * 12 + (prd.month() as i32 - today.month() as i32);
+
+    if months_remaining >= 12 {
+        "text-gray-600"
+    } else if months_remaining >= 6 {
+        "text-yellow-600 font-semibold"
+    } else {
+        "text-orange-600 font-bold"
+    }
+}
 
 #[component]
 pub fn People() -> Element {

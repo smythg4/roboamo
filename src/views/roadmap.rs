@@ -49,35 +49,43 @@ pub fn ProductRoadmap() -> Element {
                                 status: "complete"
                             }
                             FeatureCard {
-                                icon: "💾",
-                                title: "Memory Architecture Optimization",
-                                description: "Streamlined data structures and parsing workflows",
-                                status: "complete"
-                            }
-                            // IN PROGRESS
-                            FeatureCard {
                                 icon: "🔍",
                                 title: "Smart Search",
                                 description: "Quick search across all data to validate specific personnel",
                                 status: "complete"
                             }
                             FeatureCard {
-                                icon: "🏢",
-                                title: "Multi-Squadron Support",
-                                description: "Manage multiple squadrons with executive dashboard views",
-                                status: "in-progress"
+                                icon: "💾",
+                                title: "Memory Architecture Optimization",
+                                description: "Streamlined data structures and parsing workflows",
+                                status: "complete"
                             }
-                            // PLANNED (Near-term)
-                            FeatureCard {
-                                icon: "🦺",
-                                title: "Weighted Teams",
-                                description: "Prioritize certain manning priorities over others (e.g. Home Guard is more important than Det)",
-                                status: "planned"
-                            }
+                            
+                            // IN PROGRESS
                             FeatureCard {
                                 icon: "📊",
                                 title: "Results Export",
                                 description: "Export assignment results to CSV and Excel formats for further analysis",
+                                status: "in-progress"
+                            }
+                            
+                            // PLANNED (Core Features)
+                            FeatureCard {
+                                icon: "🏢",
+                                title: "Multi-Squadron Support",
+                                description: "Manage multiple squadrons with executive dashboard views",
+                                status: "planned"
+                            }
+                            FeatureCard {
+                                icon: "🛡️",
+                                title: "Security Hardening",
+                                description: "Enhanced data clearing and audit logging",
+                                status: "planned"
+                            }
+                            FeatureCard {
+                                icon: "🦺",
+                                title: "Weighted Teams",
+                                description: "Prioritize certain manning priorities over others (e.g. Home Guard is more important than Det)",
                                 status: "planned"
                             }
                             FeatureCard {
@@ -93,7 +101,13 @@ pub fn ProductRoadmap() -> Element {
                                 status: "planned"
                             }
 
-                            // RESEARCH (Complex/Future)
+                            // RESEARCH (Advanced Features)
+                            FeatureCard {
+                                icon: "⚖️",
+                                title: "Assignment Priority Weighting",
+                                description: "Customize how heavily the system weighs factors like duty status, aircrew availability, and leadership experience",
+                                status: "research"
+                            }
                             FeatureCard {
                                 icon: "📝",
                                 title: "Live Data Editing",
@@ -113,15 +127,15 @@ pub fn ProductRoadmap() -> Element {
                                 status: "research"
                             }
                             FeatureCard {
-                                icon: "💬",
-                                title: "Feedback System",
-                                description: "Built-in comment section for user suggestions and bug reports",
+                                icon: "🤝",
+                                title: "Inter-Command Trading",
+                                description: "Propose personnel trades between commands to address shortfalls",
                                 status: "research"
                             }
                             FeatureCard {
-                                icon: "⚙️",
-                                title: "Configurable Assignment Weights",
-                                description: "Allow user ability to determine how much to 'penalize' someone for SELRES or aircrew status",
+                                icon: "💬",
+                                title: "Feedback System",
+                                description: "Built-in comment section for user suggestions and bug reports",
                                 status: "research"
                             }
                         }
