@@ -92,7 +92,7 @@ pub fn Results() -> Element {
         .into_iter()
         .sorted_by_key(|(_, team_assignments)| team_assignments.len())
         .collect();
-    let today = chrono::Utc::now().date_naive();
+    let today = selected_date();
     rsx! {
     div {
         class: "results-container",
