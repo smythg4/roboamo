@@ -1,6 +1,6 @@
 use crate::engine::assignment::{Assignment, AssignmentPlan, AssignmentSolver, FlowAssignment};
 use crate::engine::person::Person;
-use crate::engine::team::{Position, Team};
+use crate::engine::team::Team;
 use crate::utilities::config::{AppState, ParsedData};
 use dioxus::prelude::*;
 
@@ -42,7 +42,7 @@ fn get_qual_table(data: &HashMap<String, Vec<String>>) -> Result<HashMap<String,
     Ok(qual_table)
 }
 
-pub fn build_people() -> Result<Vec<Person>> {
+pub fn build_people(analysis_date: chrono::NaiveDate) -> Result<Vec<Person>> {
     let app_state = use_context::<Signal<AppState>>();
     let files = &app_state.read().files;
 
@@ -86,6 +86,11 @@ pub fn build_people() -> Result<Vec<Person>> {
         let derivative_quals = get_derivative_quals(&temp_name, &person.qualifications);
         person.qualifications.extend(derivative_quals);
     }
+
+    people.retain(|person| match person.prd {
+        Some(prd_date) => prd_date > analysis_date,
+        None => true,
+    });
 
     Ok(people.clone())
 }
@@ -196,10 +201,10 @@ fn build_teams() -> Result<Vec<Team>> {
     Ok(teams.clone())
 }
 
-pub fn generate_assignments() -> Result<AssignmentResult> {
-    let people = Rc::new(build_people()?);
+pub fn generate_assignments(analysis_date: chrono::NaiveDate) -> Result<AssignmentResult> {
+    let people = Rc::new(build_people(analysis_date)?);
     let teams = Rc::new(build_teams()?);
-    let mut solver = AssignmentSolver::new(&people, &teams);
+    let mut solver = AssignmentSolver::new(&people, &teams, analysis_date);
     let (_flow_count, _flow_cost) = solver.solve();
     let flow_assignments = solver.extract_assignments();
     Ok(AssignmentResult {

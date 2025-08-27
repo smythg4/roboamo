@@ -1,7 +1,5 @@
 use crate::engine::assignment::FlowAssignment;
-use crate::engine::builder::{
-    build_assignment_plan, build_people, generate_assignments, AssignmentResult,
-};
+use crate::engine::builder::{build_assignment_plan, generate_assignments, AssignmentResult};
 use crate::engine::person::{DutyStatus, Person};
 use crate::engine::team::Team;
 use crate::utilities::AppState;
@@ -19,13 +17,17 @@ pub fn Results() -> Element {
     // Store just the raw data without the assignment plan
     let mut raw_data = use_signal(|| None::<(Vec<FlowAssignment>, Rc<Vec<Person>>, Rc<Vec<Team>>)>);
 
+    // Add the selected date signal - default to today
+    let mut selected_date = use_signal(|| chrono::Utc::now().date_naive());
+
     // Recompute when app state changes
     use_effect(move || {
         // Read app state to trigger recomputation on changes
         let _ = app_state();
+        let _ = selected_date();
 
         // Generate fresh assignments
-        let data = match generate_assignments() {
+        let data = match generate_assignments(selected_date.read().clone()) {
             Ok(AssignmentResult {
                 flow_assignments,
                 people,
@@ -118,6 +120,25 @@ pub fn Results() -> Element {
                     class: "stat-card-unfilled",
                     h3 { class: "stat-number-red", "{assignments.unfilled_positions.len()}" }
                     p { class: "stat-label-red", "Unfilled Positions" }
+                }
+            }
+        }
+
+        div {
+            class: "flex items-center gap-4 mb-4",
+            label {
+                class: "text-sm font-medium text-gray-700",
+                span { "📅 " }
+                "Analysis Date:"
+            }
+            input {
+                r#type: "date",
+                class: "border border-gray-300 rounded px-3 py-1",
+                value: "{selected_date().format(\"%Y-%m-%d\")}",
+                onchange: move |evt| {
+                    if let Ok(new_date) = chrono::NaiveDate::parse_from_str(&evt.value(), "%Y-%m-%d") {
+                        selected_date.set(new_date);
+                    }
                 }
             }
         }
@@ -329,74 +350,5 @@ fn get_prd_css_class(prd: chrono::NaiveDate, today: chrono::NaiveDate) -> &'stat
         "text-yellow-600 font-semibold"
     } else {
         "text-orange-600 font-bold"
-    }
-}
-
-#[component]
-pub fn People() -> Element {
-    // Also make this reactive to app state
-    let app_state = use_context::<Signal<AppState>>();
-
-    let mut people_data = use_signal(|| None::<Vec<Person>>);
-
-    use_effect(move || {
-        let _ = app_state();
-        let data = build_people().ok();
-        people_data.set(data);
-    });
-
-    let Some(ref people) = *people_data.read() else {
-        return rsx! {
-            div {
-                class: "section-card",
-                p { "Error loading people data" }
-            }
-        };
-    };
-
-    rsx! {
-        table {
-            thead {
-                tr {
-                    th {
-                        "Name"
-                    }
-                    th {
-                        "Rate/Rank"
-                    }
-                    th {
-                        "Duty Status"
-                    }
-                    th {
-                        "PRD"
-                    }
-                    th {
-                        "Eligible Roles"
-                    }
-                }
-            }
-            tbody {
-                for person in people {
-                    tr {
-                        td { "{person.name}" }
-                        td { "{person.raterank}"}
-                        td { "{person.duty_status}" }
-                        td {
-                            if let Some(prd) = person.prd {
-                                "{prd}"
-                            } else {
-                                ""
-                            }
-                        }
-                        td {
-                            for qual in &person.qualifications {
-                                "{qual}, "
-                            }
-                        }
-                    }
-
-                }
-            }
-        }
     }
 }

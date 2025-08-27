@@ -31,7 +31,7 @@ pub struct AssignmentSolver {
 }
 
 impl AssignmentSolver {
-    pub fn new(people: &[Person], teams: &[Team]) -> Self {
+    pub fn new(people: &[Person], teams: &[Team], analysis_date: chrono::NaiveDate) -> Self {
         let num_people = people.len();
         let num_roles = teams
             .iter()
@@ -52,11 +52,16 @@ impl AssignmentSolver {
             sink_node: total_nodes - 1,
         };
 
-        solver.build_network(people, teams);
+        solver.build_network(people, teams, analysis_date);
         solver
     }
 
-    fn build_network(&mut self, people: &[Person], teams: &[Team]) {
+    fn build_network(
+        &mut self,
+        people: &[Person],
+        teams: &[Team],
+        analysis_date: chrono::NaiveDate,
+    ) {
         let mut node_idx = 1; // source is 0
 
         // person nodes
@@ -93,18 +98,18 @@ impl AssignmentSolver {
         }
 
         // add edges between layers
-        self.add_person_to_role_edges(people);
+        self.add_person_to_role_edges(people, analysis_date);
         self.add_role_to_team_edges(teams);
         self.add_team_to_sink_edges(teams);
     }
 
-    fn add_person_to_role_edges(&mut self, people: &[Person]) {
+    fn add_person_to_role_edges(&mut self, people: &[Person], analysis_date: chrono::NaiveDate) {
         for person in people {
             let person_node = self.person_to_node[&person.name];
 
             for (role_id, &role_node) in &self.role_to_node {
                 if person.qualifications.contains(&role_id.qualification) {
-                    let cost = self.calculate_assignment_cost(person, role_id);
+                    let cost = self.calculate_assignment_cost(person, role_id, analysis_date);
 
                     self.graph.add_edge(person_node, role_node, 1, cost);
                 }
@@ -138,7 +143,12 @@ impl AssignmentSolver {
         }
     }
 
-    fn calculate_assignment_cost(&self, person: &Person, role_id: &RoleId) -> i32 {
+    fn calculate_assignment_cost(
+        &self,
+        person: &Person,
+        role_id: &RoleId,
+        analysis_date: chrono::NaiveDate,
+    ) -> i32 {
         let mut cost = 0;
 
         match person.duty_status {
@@ -147,7 +157,7 @@ impl AssignmentSolver {
         }
 
         if let Some(prd) = person.prd {
-            let days_remaining = (prd - chrono::Utc::now().date_naive()).num_days();
+            let days_remaining = (prd - analysis_date).num_days();
             match days_remaining {
                 d if d < 0 => cost += 20_000,
                 d if d < 90 => cost += 11_000,

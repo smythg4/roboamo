@@ -41,43 +41,43 @@ impl FlowGraph {
         self.graph[to].push(edge_idx + 1);
     }
 
-    pub fn add_simple_edge(&mut self, from: usize, to: usize) {
-        self.add_edge(from, to, 1, 0);
-    }
+    // pub fn add_simple_edge(&mut self, from: usize, to: usize) {
+    //     self.add_edge(from, to, 1, 0);
+    // }
 
-    pub fn add_undirected_edge(&mut self, u: usize, v: usize, capacity: i32, cost: i32) {
-        self.add_edge(u, v, capacity, cost);
-        self.add_edge(v, u, capacity, cost);
-    }
+    // pub fn add_undirected_edge(&mut self, u: usize, v: usize, capacity: i32, cost: i32) {
+    //     self.add_edge(u, v, capacity, cost);
+    //     self.add_edge(v, u, capacity, cost);
+    // }
 
-    pub fn neighbors(&self, u: usize) -> impl Iterator<Item = usize> + '_ {
-        self.graph[u]
-            .iter()
-            .map(|&edge_idx| self.edges[edge_idx].to)
-    }
+    // pub fn neighbors(&self, u: usize) -> impl Iterator<Item = usize> + '_ {
+    //     self.graph[u]
+    //         .iter()
+    //         .map(|&edge_idx| self.edges[edge_idx].to)
+    // }
 
     pub fn residual_capacity(&self, edge_idx: usize) -> i32 {
         let edge = &self.edges[edge_idx];
         edge.capacity - edge.flow
     }
 
-    pub fn ford_fulkerson(&mut self, source: usize, sink: usize) -> i32 {
-        for edge in &mut self.edges {
-            edge.flow = 0;
-        }
+    // pub fn ford_fulkerson(&mut self, source: usize, sink: usize) -> i32 {
+    //     for edge in &mut self.edges {
+    //         edge.flow = 0;
+    //     }
 
-        let mut max_flow_value = 0;
+    //     let mut max_flow_value = 0;
 
-        while let Some(path) = self.find_augmenting_path(source, sink) {
-            let path_flow = self.path_capacity(&path);
+    //     while let Some(path) = self.find_augmenting_path(source, sink) {
+    //         let path_flow = self.path_capacity(&path);
 
-            self.augment_path(&path, path_flow);
+    //         self.augment_path(&path, path_flow);
 
-            max_flow_value += path_flow;
-        }
+    //         max_flow_value += path_flow;
+    //     }
 
-        max_flow_value
-    }
+    //     max_flow_value
+    // }
 
     fn find_augmenting_path(&self, source: usize, sink: usize) -> Option<Vec<usize>> {
         // updated to use Bellman-Ford shortest augmenting path based on edge cost

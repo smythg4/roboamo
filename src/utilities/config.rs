@@ -111,18 +111,18 @@ impl AppState {
     }
 }
 
-pub struct Config {
-    pub base_url: &'static str,
-}
+// pub struct Config {
+//     pub base_url: &'static str,
+// }
 
-impl Config {
-    pub fn new() -> Self {
-        #[cfg(debug_assertions)]
-        let base_url = "http://localhost:8080";
+// impl Config {
+//     pub fn new() -> Self {
+//         #[cfg(debug_assertions)]
+//         let base_url = "http://localhost:8080";
 
-        #[cfg(not(debug_assertions))]
-        let base_url = "https://smythg4.github.io/roboamo";
+//         #[cfg(not(debug_assertions))]
+//         let base_url = "https://smythg4.github.io/roboamo";
 
-        Self { base_url }
-    }
-}
+//         Self { base_url }
+//     }
+// }

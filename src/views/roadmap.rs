@@ -60,7 +60,13 @@ pub fn ProductRoadmap() -> Element {
                                 description: "Streamlined data structures and parsing workflows",
                                 status: "complete"
                             }
-                            
+                            FeatureCard {
+                                icon: "📅",
+                                title: "Temporal Analysis",
+                                description: "Track requirements and shortfalls over time",
+                                status: "complete"
+                            }
+
                             // IN PROGRESS
                             FeatureCard {
                                 icon: "📊",
@@ -68,7 +74,7 @@ pub fn ProductRoadmap() -> Element {
                                 description: "Export assignment results to CSV and Excel formats for further analysis",
                                 status: "in-progress"
                             }
-                            
+
                             // PLANNED (Core Features)
                             FeatureCard {
                                 icon: "🏢",
@@ -86,12 +92,6 @@ pub fn ProductRoadmap() -> Element {
                                 icon: "🦺",
                                 title: "Weighted Teams",
                                 description: "Prioritize certain manning priorities over others (e.g. Home Guard is more important than Det)",
-                                status: "planned"
-                            }
-                            FeatureCard {
-                                icon: "📅",
-                                title: "Temporal Analysis",
-                                description: "Track requirements and shortfalls over time",
                                 status: "planned"
                             }
                             FeatureCard {
