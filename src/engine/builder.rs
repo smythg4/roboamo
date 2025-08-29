@@ -1,4 +1,6 @@
-use crate::engine::assignment::{Assignment, AssignmentPlan, AssignmentSolver, FlowAssignment};
+use crate::engine::assignment::{
+    Assignment, AssignmentLock, AssignmentPlan, AssignmentSolver, FlowAssignment,
+};
 use crate::engine::person::Person;
 use crate::engine::team::Team;
 use crate::utilities::config::{AppState, ParsedData};
@@ -201,12 +203,28 @@ fn build_teams() -> Result<Vec<Team>> {
     Ok(teams.clone())
 }
 
-pub fn generate_assignments(analysis_date: chrono::NaiveDate) -> Result<AssignmentResult> {
+pub fn generate_assignments(
+    analysis_date: chrono::NaiveDate,
+    assignment_locks: Option<Vec<AssignmentLock>>,
+) -> Result<AssignmentResult> {
     let people = Rc::new(build_people(analysis_date)?);
     let teams = Rc::new(build_teams()?);
-    let mut solver = AssignmentSolver::new(&people, &teams, analysis_date);
+    let mut solver =
+        AssignmentSolver::new(&people, &teams, analysis_date, assignment_locks.clone());
     let (_flow_count, _flow_cost) = solver.solve();
-    let flow_assignments = solver.extract_assignments();
+    let mut flow_assignments = solver.extract_assignments();
+    if let Some(locks) = assignment_locks {
+        for lock in locks {
+            if let (Some(team_name), Some(qualification)) = (lock.team_name, lock.qualification) {
+                flow_assignments.push(FlowAssignment {
+                    person_name: lock.person_name,
+                    team: team_name,
+                    qualification,
+                    manual_override: true,
+                });
+            }
+        }
+    }
     Ok(AssignmentResult {
         flow_assignments,
         people: people.clone(),
@@ -242,6 +260,7 @@ pub fn build_assignment_plan(
             team_name: a.team.clone(),
             qualification: a.qualification.clone(),
             score: 1,
+            manual_override: a.manual_override,
         });
     }
 

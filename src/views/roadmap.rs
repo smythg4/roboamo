@@ -66,7 +66,12 @@ pub fn ProductRoadmap() -> Element {
                                 description: "Track requirements and shortfalls over time",
                                 status: "complete"
                             }
-
+                            FeatureCard {
+                                icon: "🔄",
+                                title: "Assignment Override",
+                                description: "Manually swap assigned personnel between teams or with unassigned individuals",
+                                status: "complete"
+                            }
                             // IN PROGRESS
                             FeatureCard {
                                 icon: "📊",
@@ -112,12 +117,6 @@ pub fn ProductRoadmap() -> Element {
                                 icon: "📝",
                                 title: "Live Data Editing",
                                 description: "Edit uploaded data directly in the browser before processing",
-                                status: "research"
-                            }
-                            FeatureCard {
-                                icon: "🔄",
-                                title: "Assignment Override",
-                                description: "Manually swap assigned personnel between teams or with unassigned individuals",
                                 status: "research"
                             }
                             FeatureCard {
@@ -182,6 +181,12 @@ pub fn ProductRoadmap() -> Element {
                             }
 
                             // LOW PRIORITY
+                            IssueCard {
+                                severity: "low",
+                                title: "Single Assignment Lock Limit",
+                                description: "Each team role (e.g., 120 CDI, MMCPO) can only have one locked assignment at a time, even if the role requires multiple people",
+                                workaround: "Use algorithmic optimization for additional positions in multi-person roles, or clear and re-lock to change manual assignments"
+                            }
                             IssueCard {
                                 severity: "low",
                                 title: "Qualification Name Matching",

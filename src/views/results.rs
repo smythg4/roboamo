@@ -1,3 +1,4 @@
+use crate::engine::assignment::AssignmentLock;
 use crate::engine::assignment::FlowAssignment;
 use crate::engine::builder::{build_assignment_plan, generate_assignments, AssignmentResult};
 use crate::engine::person::{DutyStatus, Person};
@@ -7,27 +8,52 @@ use crate::views::ErrorDisplay;
 use chrono::prelude::*;
 use dioxus::prelude::*;
 use itertools::Itertools;
+use std::collections::HashMap;
 use std::rc::Rc;
+
+#[derive(Clone, Copy, PartialEq)]
+enum InteractionMode {
+    ViewOnly,
+    Swap,
+    Lock,
+}
 
 #[component]
 pub fn Results() -> Element {
     // Subscribe to app state changes
     let app_state = use_context::<Signal<AppState>>();
-
+    let mut interaction_mode = use_signal(|| InteractionMode::ViewOnly);
     // Store just the raw data without the assignment plan
     let mut raw_data = use_signal(|| None::<(Vec<FlowAssignment>, Rc<Vec<Person>>, Rc<Vec<Team>>)>);
 
     // Add the selected date signal - default to today
     let mut selected_date = use_signal(|| chrono::Utc::now().date_naive());
+    let mut selected_assignments =
+        use_signal(|| Vec::<(String, Option<String>, Option<String>)>::new()); // (person_name, team_name, qualification)
 
-    // Recompute when app state changes
+    let mut persistent_locks = use_signal(|| HashMap::<(String, String), String>::new());
     use_effect(move || {
         // Read app state to trigger recomputation on changes
         let _ = app_state();
         let _ = selected_date();
+        let current_persistent_locks = persistent_locks();
+
+        let all_locks = if !current_persistent_locks.is_empty() {
+            let assignment_locks = current_persistent_locks
+                .iter()
+                .map(|((team, qual), person)| AssignmentLock {
+                    person_name: person.clone(),
+                    team_name: Some(team.clone()),
+                    qualification: Some(qual.clone()),
+                })
+                .collect();
+            Some(assignment_locks)
+        } else {
+            None
+        };
 
         // Generate fresh assignments
-        let data = match generate_assignments(selected_date.read().clone()) {
+        let data = match generate_assignments(selected_date(), all_locks) {
             Ok(AssignmentResult {
                 flow_assignments,
                 people,
@@ -77,22 +103,29 @@ pub fn Results() -> Element {
         }
     };
 
+    let unassigned_people: Vec<_> = assignments
+        .unassigned_people
+        .iter()
+        .sorted_by(|p, q| Ord::cmp(&q.qualifications.len(), &p.qualifications.len()))
+        .cloned()
+        .collect();
+
     let teams_with_assignments: Vec<_> = teams
         .iter()
         .map(|team| {
             let team_assignments: Vec<_> = assignments
                 .assignments
                 .iter()
+                .cloned()
                 .filter(|a| a.team_name == team.name)
                 .collect();
             (team, team_assignments)
         })
         //.filter(|(_, team_assignments)| !team_assignments.is_empty())
-        .collect::<Vec<_>>()
-        .into_iter()
         .sorted_by_key(|(_, team_assignments)| team_assignments.len())
         .collect();
     let today = selected_date();
+
     rsx! {
     div {
         class: "results-container",
@@ -123,7 +156,87 @@ pub fn Results() -> Element {
                 }
             }
         }
+        div {
+            class: "flex gap-2",
+            button {
+                class: match interaction_mode() {
+                    InteractionMode::ViewOnly => "px-4 py-2 bg-gray-600 text-white rounded-lg font-medium",
+                    _ => "px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                },
+                onclick: move |_| {
+                    interaction_mode.set(InteractionMode::ViewOnly);
+                    selected_assignments.set(vec![]);
+                },
+                "👁️ View Only"
+            }
+            // Swap Mode - button changes when selections are ready
+            button {
+                class: match (interaction_mode(), selected_assignments().len()) {
+                    (InteractionMode::Swap, 2) => "px-4 py-2 bg-blue-600 text-white rounded-lg font-medium animate-pulse",
+                    (InteractionMode::Swap, _) => "px-4 py-2 bg-blue-500 text-white rounded-lg font-medium",
+                    _ => "px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300",
+                },
+                onclick: move |_| {
+                    if interaction_mode() == InteractionMode::Swap && selected_assignments().len() == 2 {
+                        // Execute swap
+                        let selections = selected_assignments();
+                        let (person1, team1, qual1) = &selections[0];
+                        let (person2, team2, qual2) = &selections[1];
+                        persistent_locks.with_mut(|locks| {
+                            if let (Some(team), Some(qual)) = (team2, qual2) {
+                                locks.insert((team.clone(), qual.clone()), person1.clone());
+                            }
+                            if let (Some(team), Some(qual)) = (team1, qual1) {
+                                locks.insert((team.clone(), qual.clone()), person2.clone());
+                            }
+                        });
+                        selected_assignments.set(vec![]);
+                        interaction_mode.set(InteractionMode::ViewOnly);
+                    } else {
+                        interaction_mode.set(InteractionMode::Swap);
+                        selected_assignments.set(vec![]);
+                    }
+                },
+                match (interaction_mode(), selected_assignments().len()) {
+                    (InteractionMode::Swap, 2) => "🔄 Execute Swap",
+                    (InteractionMode::Swap, 1) => "🔄 Select One More",
+                    (InteractionMode::Swap, _) => "🔄 Swap Mode",
+                    _ => "🔄 Swap Mode"
+                }
+            }
 
+            // Lock Mode - button changes when selections exist
+            button {
+                class: match (interaction_mode(), selected_assignments().len()) {
+                    (InteractionMode::Lock, n) if n > 0 => "px-4 py-2 bg-orange-600 text-white rounded-lg font-medium animate-pulse",
+                    (InteractionMode::Lock, _) => "px-4 py-2 bg-orange-500 text-white rounded-lg font-medium",
+                    _ => "px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                },
+                onclick: move |_| {
+                    if interaction_mode() == InteractionMode::Lock && !selected_assignments().is_empty() {
+                        // Execute locks
+                        let selections = selected_assignments();
+                        persistent_locks.with_mut(|locks| {
+                            for (person, team, qual) in selections {
+                                if let (Some(team), Some(qual)) = (team, qual) {
+                                    locks.insert((team, qual), person);
+                                }
+                            }
+                        });
+                        selected_assignments.set(vec![]);
+                        interaction_mode.set(InteractionMode::ViewOnly);
+                    } else {
+                        interaction_mode.set(InteractionMode::Lock);
+                        selected_assignments.set(vec![]);
+                    }
+                },
+                match (interaction_mode(), selected_assignments().len()) {
+                    (InteractionMode::Lock, n) if n > 0 => format!("🔒 Lock {} Assignments", n),
+                    (InteractionMode::Lock, _) => "🔒 Lock Mode".to_string(),
+                    _ => "🔒 Lock Mode".to_string()
+                }
+            }
+        }
         div {
             class: "flex items-center gap-4 mb-4",
             label {
@@ -141,6 +254,16 @@ pub fn Results() -> Element {
                     }
                 }
             }
+
+            // button to clear all locked selections
+            button {
+                class: "px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600",
+                onclick: move |_| {
+                    persistent_locks.set(HashMap::new());
+                },
+                "Clear All Locks ({persistent_locks().len()})"
+            }
+
         }
 
         // Assignments by Team
@@ -168,6 +291,7 @@ pub fn Results() -> Element {
                                 thead {
                                     class: "table-header",
                                     tr {
+                                        th { class: "table-header-cell", "" }
                                         th { class: "table-header-cell", "Name" }
                                         th { class: "table-header-cell", "Rate/Rank" }
                                         th { class: "table-header-cell", "Role" }
@@ -180,6 +304,49 @@ pub fn Results() -> Element {
                                         tr {
                                             class: "table-row",
                                             td {
+                                                class: "table-cell-muted",
+                                                //if interaction_mode() != InteractionMode::ViewOnly {
+                                                    input {
+                                                        r#type: "checkbox",
+                                                        style: if interaction_mode() == InteractionMode::ViewOnly {
+                                                            "visibility: hidden;"
+                                                        } else {
+                                                            "visibility: visible;"
+                                                        },
+                                                        checked: is_assignment_selected(
+                                                            &selected_assignments(),
+                                                            &assignment.person.name,
+                                                            &assignment.team_name,
+                                                            &assignment.qualification,
+                                                        ),
+                                                        disabled: {
+                                                            let current_selected = selected_assignments();
+                                                            let is_currently_selected = is_assignment_selected(
+                                                                &current_selected,
+                                                                &assignment.person.name,
+                                                                &assignment.team_name,
+                                                                &assignment.qualification,
+                                                            );
+                                                            is_checkbox_disabled(interaction_mode(), current_selected.len(), is_currently_selected)
+                                                        },
+                                                        onchange: move |evt| {
+                                                            let assignment_id = (
+                                                                assignment.person.name.clone(),
+                                                                Some(assignment.team_name.clone()),
+                                                                Some(assignment.qualification.clone()),
+                                                            );
+                                                            let new_selections = toggle_assignment_selection(
+                                                                assignment_id,
+                                                                evt.checked(),
+                                                                selected_assignments(),
+                                                                interaction_mode(),
+                                                            );
+                                                            selected_assignments.set(new_selections);
+                                                        }
+                                                    }
+                                                //}
+                                            }
+                                            td {
                                                 class: "table-cell-name",
                                                 "{assignment.person.name}"
                                             }
@@ -190,7 +357,11 @@ pub fn Results() -> Element {
                                             td {
                                                 class: "table-cell",
                                                 span {
-                                                    class: "role-badge",
+                                                    class: if assignment.manual_override {
+                                                        "role-badge bg-yellow-100 text-yellow-800 border border-yellow-300"
+                                                    } else {
+                                                        "role-badge"
+                                                    },
                                                     "{assignment.qualification}"
                                                 }
                                             }
@@ -229,6 +400,9 @@ pub fn Results() -> Element {
                                         .filter(|(team_name,_)| team_name == &team.name) {
                                             tr {
                                                 class: "table-row bg-red-50",
+                                                td {
+                                                    ""
+                                                }
                                                 td {
                                                     class: "table-cell-name text-red-600",
                                                     span { class: "text-xl mr-2", "⚠️" }
@@ -271,6 +445,7 @@ pub fn Results() -> Element {
                         thead {
                             class: "table-header",
                             tr {
+                                th { class: "table-header-cell", "" }
                                 th { class: "table-header-cell", "Name" }
                                 th { class: "table-header-cell", "Rate/Rank" }
                                 th { class: "table-header-cell", "Status" }
@@ -279,10 +454,42 @@ pub fn Results() -> Element {
                             }
                         }
                         tbody {
-                            for person in assignments.unassigned_people.iter()
-                                .sorted_by(|p, q| Ord::cmp(&q.qualifications.len(), &p.qualifications.len())) {
+                            for person in unassigned_people {
                                 tr {
                                     class: "table-row",
+                                    td {
+                                        class: "table-cell-muted",
+                                        input {
+                                            r#type: "checkbox",
+                                            style: if interaction_mode() == InteractionMode::ViewOnly {
+                                                "visibility: hidden;"
+                                            } else {
+                                                "visibility: visible;"
+                                            },
+                                            checked: is_unassigned_selected(
+                                                  &selected_assignments(),
+                                                  &person.name,
+                                              ),
+                                            disabled: {
+                                                  let current_selected = selected_assignments();
+                                                  let is_currently_selected = is_unassigned_selected(
+                                                      &current_selected,
+                                                      &person.name,
+                                                  );
+                                                  is_checkbox_disabled(interaction_mode(), current_selected.len(), is_currently_selected)
+                                              },
+                                            onchange: move |evt| {
+                                                  let assignment_id = (person.name.clone(), None, None);
+                                                  let new_selections = toggle_assignment_selection(
+                                                      assignment_id,
+                                                      evt.checked(),
+                                                      selected_assignments(),
+                                                      interaction_mode(),
+                                                  );
+                                                  selected_assignments.set(new_selections);
+                                          }
+                                        }
+                                    }
                                     td {
                                         class: "table-cell-name",
                                         "{person.name}"
@@ -351,4 +558,66 @@ fn get_prd_css_class(prd: chrono::NaiveDate, today: chrono::NaiveDate) -> &'stat
     } else {
         "text-orange-600 font-bold"
     }
+}
+
+fn should_add_selection(interaction_mode: InteractionMode, current_count: usize) -> bool {
+    match interaction_mode {
+        InteractionMode::Swap => current_count < 2,
+        InteractionMode::Lock => true,
+        InteractionMode::ViewOnly => false,
+    }
+}
+
+fn is_checkbox_disabled(
+    interaction_mode: InteractionMode,
+    current_count: usize,
+    is_currently_selected: bool,
+) -> bool {
+    match interaction_mode {
+        InteractionMode::Swap => current_count >= 2 && !is_currently_selected,
+        InteractionMode::Lock => false,
+        InteractionMode::ViewOnly => true,
+    }
+}
+
+fn is_assignment_selected(
+    selections: &[(String, Option<String>, Option<String>)],
+    person_name: &str,
+    team_name: &str,
+    qualification: &str,
+) -> bool {
+    selections.iter().any(|(name, team, qual)| {
+        name == person_name
+            && team.as_deref() == Some(&team_name)
+            && qual.as_deref() == Some(&qualification)
+    })
+}
+
+fn toggle_assignment_selection(
+    assignment_id: (String, Option<String>, Option<String>),
+    is_checked: bool,
+    current_selections: Vec<(String, Option<String>, Option<String>)>,
+    interaction_mode: InteractionMode,
+) -> Vec<(String, Option<String>, Option<String>)> {
+    if is_checked {
+        let mut updated = current_selections;
+        if should_add_selection(interaction_mode, updated.len()) {
+            updated.push(assignment_id);
+        }
+        updated
+    } else {
+        current_selections
+            .into_iter()
+            .filter(|item| item != &assignment_id)
+            .collect()
+    }
+}
+
+fn is_unassigned_selected(
+    selections: &[(String, Option<String>, Option<String>)],
+    person_name: &str,
+) -> bool {
+    selections
+        .iter()
+        .any(|(name, team, qual)| name == person_name && team.is_none() && qual.is_none())
 }

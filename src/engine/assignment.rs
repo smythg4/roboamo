@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::engine::flow_graph::FlowGraph;
 use crate::engine::person::{DutyStatus, Person};
@@ -31,7 +31,12 @@ pub struct AssignmentSolver {
 }
 
 impl AssignmentSolver {
-    pub fn new(people: &[Person], teams: &[Team], analysis_date: chrono::NaiveDate) -> Self {
+    pub fn new(
+        people: &[Person],
+        teams: &[Team],
+        analysis_date: chrono::NaiveDate,
+        assignment_locks: Option<Vec<AssignmentLock>>,
+    ) -> Self {
         let num_people = people.len();
         let num_roles = teams
             .iter()
@@ -52,7 +57,7 @@ impl AssignmentSolver {
             sink_node: total_nodes - 1,
         };
 
-        solver.build_network(people, teams, analysis_date);
+        solver.build_network(people, teams, analysis_date, assignment_locks);
         solver
     }
 
@@ -61,16 +66,49 @@ impl AssignmentSolver {
         people: &[Person],
         teams: &[Team],
         analysis_date: chrono::NaiveDate,
+        assignment_locks: Option<Vec<AssignmentLock>>,
     ) {
         let mut node_idx = 1; // source is 0
 
+        let (locked_people_set, locked_role_ids) = if let Some(locks) = assignment_locks {
+            let locked_people: HashSet<String> =
+                locks.iter().map(|al| al.person_name.clone()).collect();
+
+            let mut instance_counters: HashMap<(String, String), u32> = HashMap::new();
+
+            let locked_role_ids: HashSet<RoleId> = locks
+                .iter()
+                .filter_map(|al| {
+                    if let (Some(team), Some(qual)) = (&al.team_name, &al.qualification) {
+                        // update this logic to dynamically calculate the instance to lock
+                        let key = (team.clone(), qual.clone());
+                        let instance = *instance_counters.get(&key).unwrap_or(&0);
+                        instance_counters.insert(key, instance + 1);
+
+                        Some(RoleId {
+                            team: team.clone(),
+                            qualification: qual.clone(),
+                            instance,
+                        })
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+
+            (locked_people, locked_role_ids)
+        } else {
+            (HashSet::new(), HashSet::new())
+        };
         // person nodes
         for person in people {
-            self.person_to_node.insert(person.name.clone(), node_idx);
-            self.node_to_person.insert(node_idx, person.name.clone());
+            if !locked_people_set.contains(&person.name) {
+                self.person_to_node.insert(person.name.clone(), node_idx);
+                self.node_to_person.insert(node_idx, person.name.clone());
 
-            self.graph.add_edge(self.source_node, node_idx, 1, 0);
-            node_idx += 1;
+                self.graph.add_edge(self.source_node, node_idx, 1, 0);
+                node_idx += 1;
+            }
         }
 
         // role nodes
@@ -83,9 +121,11 @@ impl AssignmentSolver {
                         instance: instance as u32,
                     };
 
-                    self.role_to_node.insert(role_id.clone(), node_idx);
-                    self.node_to_role.insert(node_idx, role_id);
-                    node_idx += 1;
+                    if !locked_role_ids.contains(&role_id) {
+                        self.role_to_node.insert(role_id.clone(), node_idx);
+                        self.node_to_role.insert(node_idx, role_id);
+                        node_idx += 1;
+                    }
                 }
             }
         }
@@ -105,13 +145,13 @@ impl AssignmentSolver {
 
     fn add_person_to_role_edges(&mut self, people: &[Person], analysis_date: chrono::NaiveDate) {
         for person in people {
-            let person_node = self.person_to_node[&person.name];
+            if let Some(&person_node) = self.person_to_node.get(&person.name) {
+                for (role_id, &role_node) in &self.role_to_node {
+                    if person.qualifications.contains(&role_id.qualification) {
+                        let cost = self.calculate_assignment_cost(person, role_id, analysis_date);
 
-            for (role_id, &role_node) in &self.role_to_node {
-                if person.qualifications.contains(&role_id.qualification) {
-                    let cost = self.calculate_assignment_cost(person, role_id, analysis_date);
-
-                    self.graph.add_edge(person_node, role_node, 1, cost);
+                        self.graph.add_edge(person_node, role_node, 1, cost);
+                    }
                 }
             }
         }
@@ -215,6 +255,7 @@ impl AssignmentSolver {
                             person_name: person_name.clone(),
                             team: role_id.team.clone(),
                             qualification: role_id.qualification.clone(),
+                            manual_override: false,
                         });
                     }
                 }
@@ -265,14 +306,16 @@ pub struct FlowAssignment {
     pub person_name: String,
     pub team: String,
     pub qualification: String,
+    pub manual_override: bool,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Assignment {
     pub person: Rc<Person>,
     pub team_name: String,
     pub qualification: String,
     pub score: i32,
+    pub manual_override: bool,
 }
 
 impl Display for Assignment {
@@ -285,9 +328,16 @@ impl Display for Assignment {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AssignmentPlan {
     pub assignments: Vec<Assignment>,
     pub unfilled_positions: Vec<(String, String)>,
     pub unassigned_people: Rc<Vec<Person>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct AssignmentLock {
+    pub person_name: String,
+    pub team_name: Option<String>,
+    pub qualification: Option<String>,
 }
