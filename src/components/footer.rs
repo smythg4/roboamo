@@ -7,9 +7,11 @@ pub fn Footer() -> Element {
     rsx! {
         div {
             class: "flex justify-center align-middle p-2",
-            Link {
+            a {
                 class: "flex",
-                to: "https://dioxuslabs.com/",
+                href: "https://dioxuslabs.com/",
+                target: "_blank",
+                rel: "noopener noreferrer",
                 img {
                     class: "max-h-8",
                     src: ICON,
