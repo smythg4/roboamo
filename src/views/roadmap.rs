@@ -74,12 +74,11 @@ pub fn ProductRoadmap() -> Element {
                             }
                             // IN PROGRESS
                             FeatureCard {
-                                icon: "📊",
-                                title: "Results Export",
-                                description: "Export assignment results to CSV and Excel formats for further analysis",
+                                icon: "💾",
+                                title: "Save State Export",
+                                description: "Export complete analysis sessions as JSON including all data, locks, and assignments for backup and collaboration",
                                 status: "in-progress"
                             }
-
                             // PLANNED (Core Features)
                             FeatureCard {
                                 icon: "🏢",

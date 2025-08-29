@@ -1,5 +1,5 @@
 use crate::engine::team::{Position, Team};
-use anyhow::anyhow;
+use anyhow::{anyhow, Result};
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -16,7 +16,7 @@ pub struct Requirement {
     pub qual_qty: usize,
 }
 
-pub fn parse_requirements(data: Rc<Vec<u8>>) -> Result<Vec<Team>, Box<dyn std::error::Error>> {
+pub fn parse_requirements(data: Rc<Vec<u8>>) -> Result<Vec<Team>> {
     let mut teams = HashMap::new();
     let mut rdr = csv::Reader::from_reader(&data[..]);
 
@@ -40,7 +40,7 @@ pub fn parse_requirements(data: Rc<Vec<u8>>) -> Result<Vec<Team>, Box<dyn std::e
 
 pub type QualTable = HashMap<String, Vec<String>>;
 
-pub fn parse_qual_defs(data: Rc<Vec<u8>>) -> Result<QualTable, Box<dyn std::error::Error>> {
+pub fn parse_qual_defs(data: Rc<Vec<u8>>) -> Result<QualTable> {
     let mut quals = QualTable::new();
     let mut rdr = csv::Reader::from_reader(&data[..]);
 
@@ -67,7 +67,7 @@ use calamine::{open_workbook_from_rs, Data, Reader, Xlsx};
 
 use crate::engine::person::{DutyStatus, Person};
 
-pub fn parse_asm_file(data: Rc<Vec<u8>>) -> Result<Vec<Person>, Box<dyn std::error::Error>> {
+pub fn parse_asm_file(data: Rc<Vec<u8>>) -> Result<Vec<Person>> {
     let data = data.as_ref();
     let mut people: HashMap<String, Person> = HashMap::new();
     let cursor = std::io::Cursor::new(data);
@@ -128,10 +128,7 @@ fn data_to_string(data: &Data) -> Cow<'_, str> {
     }
 }
 
-pub fn enhance_personnel_with_prd(
-    people: &mut Vec<Person>,
-    prd_list: PRDList,
-) -> Result<(), Box<dyn std::error::Error>> {
+pub fn enhance_personnel_with_prd(people: &mut Vec<Person>, prd_list: PRDList) -> Result<()> {
     for person in people {
         if let Some(prd) = prd_lookup(&person.name, &prd_list) {
             person.prd = Some(prd);
@@ -144,7 +141,7 @@ pub fn enhance_personnel_with_prd(
     Ok(())
 }
 
-pub fn parse_fltmps_file(data: Rc<Vec<u8>>) -> Result<PRDList, Box<dyn std::error::Error>> {
+pub fn parse_fltmps_file(data: Rc<Vec<u8>>) -> Result<PRDList> {
     let data = data.as_ref();
     let mut prds = PRDList::new();
     let cursor = std::io::Cursor::new(data);
@@ -173,7 +170,7 @@ pub fn parse_fltmps_file(data: Rc<Vec<u8>>) -> Result<PRDList, Box<dyn std::erro
 
             let name = cells
                 .get(name_col)
-                .ok_or_else(|| format!("Row missing name column ({})", name_col))?
+                .ok_or_else(|| anyhow!("Row missing name column ({})", name_col))?
                 .clone();
 
             let looks_like_name = name

@@ -1,5 +1,6 @@
 use dioxus::prelude::*;
 
+use crate::components::SearchBar;
 use crate::utilities::AppState;
 use crate::utilities::PreviewType;
 use crate::utilities::{parse_asm_file, parse_fltmps_file, parse_qual_defs, parse_requirements};
@@ -171,6 +172,7 @@ pub fn RequirementsPreview(data: Rc<Vec<u8>>) -> Element {
 
 #[component]
 pub fn QualDefPreview(data: Rc<Vec<u8>>) -> Element {
+    let mut search_query = use_signal(|| String::new());
     match parse_qual_defs(data) {
         Ok(quals) => {
             rsx! {
@@ -199,6 +201,12 @@ pub fn QualDefPreview(data: Rc<Vec<u8>>) -> Element {
                         }
                     }
 
+                    SearchBar {
+                        placeholder: "Search qualifications...",
+                        value: search_query(),
+                        onchange: move |value| search_query.set(value),
+                    }
+
                     // Qualifications table
                     div {
                         class: "bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden",
@@ -219,12 +227,16 @@ pub fn QualDefPreview(data: Rc<Vec<u8>>) -> Element {
                             }
                             tbody {
                                 class: "bg-white divide-y divide-gray-200",
-                                for (qual_name, asm_quals) in quals {
+                                for (qual_name, asm_quals) in quals.iter()
+                                    .filter(|(qual_name, _)| {
+                                        let query = search_query().to_lowercase();
+                                        query.is_empty() || qual_name.to_lowercase().contains(&query)
+                                    }) {
                                     tr {
                                         class: "hover:bg-gray-50 transition-colors duration-150",
                                         td {
                                             class: "px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900",
-                                            {qual_name}
+                                            {qual_name.clone()}
                                         }
                                         td {
                                             class: "px-6 py-4 text-sm text-gray-600",
@@ -233,7 +245,7 @@ pub fn QualDefPreview(data: Rc<Vec<u8>>) -> Element {
                                                 for qual in asm_quals {
                                                     span {
                                                         class: "inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-blue-100 text-blue-800",
-                                                        {qual}
+                                                        {qual.clone()}
                                                     }
                                                 }
                                             }

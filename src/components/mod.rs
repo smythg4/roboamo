@@ -11,5 +11,8 @@ pub use progressbar::ProgressBar;
 mod preview;
 pub use preview::Preview;
 
+mod search_bar;
+pub use search_bar::SearchBar;
+
 mod footer;
 pub use footer::Footer;
