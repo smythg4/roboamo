@@ -11,6 +11,7 @@ use regex::Regex;
 use std::collections::HashMap;
 
 use anyhow::{anyhow, bail, Context, Result};
+use std::collections::HashSet;
 use std::rc::Rc;
 
 pub struct AssignmentResult {
@@ -147,7 +148,7 @@ fn is_onethirty_cdi(_name: &str, quals: &[String]) -> bool {
     all.iter().any(|item| quals.contains(&(*item).to_string()))
 }
 
-fn get_derivative_quals(name: &str, quals: &[String]) -> Vec<String> {
+fn get_derivative_quals(name: &str, quals: &HashSet<String>) -> Vec<String> {
     let mut extra_quals = vec![];
     let quals: Vec<_> = quals.iter().map(|q| q.to_uppercase()).collect();
 

@@ -1,15 +1,22 @@
-use crate::engine::assignment::AssignmentLock;
-use crate::engine::assignment::FlowAssignment;
-use crate::engine::builder::{build_assignment_plan, generate_assignments, AssignmentResult};
-use crate::engine::person::{DutyStatus, Person};
-use crate::engine::team::Team;
-use crate::utilities::AppState;
-use crate::views::ErrorDisplay;
+// Standard library imports
+use std::collections::HashMap;
+use std::rc::Rc;
+
+// External crate imports
 use chrono::prelude::*;
 use dioxus::prelude::*;
 use itertools::Itertools;
-use std::collections::HashMap;
-use std::rc::Rc;
+
+// Local crate imports - engine
+use crate::engine::{
+    assignment::{AssignmentLock, FlowAssignment},
+    builder::{build_assignment_plan, generate_assignments, AssignmentResult},
+    person::{DutyStatus, Person},
+    team::Team,
+};
+
+// Local crate imports - other
+use crate::{components::SearchBar, utilities::AppState, views::ErrorDisplay};
 
 #[derive(Clone, Copy, PartialEq)]
 enum InteractionMode {
@@ -20,6 +27,7 @@ enum InteractionMode {
 
 #[component]
 pub fn Results() -> Element {
+    let mut search_query = use_signal(|| String::new());
     // Subscribe to app state changes
     let app_state = use_context::<Signal<AppState>>();
     let mut interaction_mode = use_signal(|| InteractionMode::ViewOnly);
@@ -118,6 +126,7 @@ pub fn Results() -> Element {
                 .iter()
                 .cloned()
                 .filter(|a| a.team_name == team.name)
+                .sorted_by_key(|a| !a.manual_override)
                 .collect();
             (team, team_assignments)
         })
@@ -157,7 +166,7 @@ pub fn Results() -> Element {
             }
         }
         div {
-            class: "flex gap-2",
+            class: "sticky top-17 z-50 bg-white shadow-md border-b border-gray-200 flex gap-2 p-4 w-175",
             button {
                 class: match interaction_mode() {
                     InteractionMode::ViewOnly => "px-4 py-2 bg-gray-600 text-white rounded-lg font-medium",
@@ -236,9 +245,18 @@ pub fn Results() -> Element {
                     _ => "🔒 Lock Mode".to_string()
                 }
             }
+
+            // button to clear all locked selections
+            button {
+                class: "px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600",
+                onclick: move |_| {
+                    persistent_locks.set(HashMap::new());
+                },
+                "Clear All Locks ({persistent_locks().len()})"
+            }
         }
         div {
-            class: "flex items-center gap-4 mb-4",
+            class: "sticky top-40 z-50 bg-white shadow-md border-b border-gray-200 flex items-center gap-2 p-4 w-175",
             label {
                 class: "text-sm font-medium text-gray-700",
                 span { "📅 " }
@@ -253,15 +271,6 @@ pub fn Results() -> Element {
                         selected_date.set(new_date);
                     }
                 }
-            }
-
-            // button to clear all locked selections
-            button {
-                class: "px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600",
-                onclick: move |_| {
-                    persistent_locks.set(HashMap::new());
-                },
-                "Clear All Locks ({persistent_locks().len()})"
             }
 
         }
@@ -302,7 +311,16 @@ pub fn Results() -> Element {
                                 tbody {
                                     for assignment in team_assignments {
                                         tr {
-                                            class: "table-row",
+                                            class: if is_assignment_selected(
+                                                &selected_assignments(),
+                                                &assignment.person.name,
+                                                &assignment.team_name,
+                                                &assignment.qualification,
+                                            ) {
+                                                "table-row bg-yellow-50 border-l-4 border-l-yellow-400"
+                                            } else {
+                                                "table-row"
+                                            },
                                             td {
                                                 class: "table-cell-muted",
                                                 //if interaction_mode() != InteractionMode::ViewOnly {
@@ -358,7 +376,7 @@ pub fn Results() -> Element {
                                                 class: "table-cell",
                                                 span {
                                                     class: if assignment.manual_override {
-                                                        "role-badge bg-yellow-100 text-yellow-800 border border-yellow-300"
+                                                        "role-badge role-badge--locked"
                                                     } else {
                                                         "role-badge"
                                                     },
@@ -430,14 +448,18 @@ pub fn Results() -> Element {
         }
 
         // Unassigned People
-        if !assignments.unassigned_people.is_empty() {
+        if !unassigned_people.is_empty() {
             div {
                 class: "section-card",
                 h2 {
                     class: "section-title-alert",
                     "👤 Unassigned Personnel"
                 }
-
+                SearchBar {
+                    placeholder: "Search name or qual...",
+                    value: search_query(),
+                    onchange: move |value| search_query.set(value),
+                }
                 div {
                     class: "table-wrapper",
                     table {
@@ -454,7 +476,13 @@ pub fn Results() -> Element {
                             }
                         }
                         tbody {
-                            for person in unassigned_people {
+                            for person in unassigned_people.iter().cloned()
+                                .filter(|p| {
+                                        let query = search_query().to_lowercase();
+                                        query.is_empty() ||
+                                        p.name.to_lowercase().contains(&query) ||
+                                        p.qualifications.iter().any(|q| q.to_lowercase().contains(&query))
+                                    }) {
                                 tr {
                                     class: "table-row",
                                     td {
@@ -535,7 +563,7 @@ pub fn Results() -> Element {
                                     }
                                     td {
                                         class: "table-cell-small",
-                                        "{person.qualifications.join(\", \")}"
+                                        "{person.qualifications.iter().sorted().join(\", \")}"
                                     }
                                 }
                             }

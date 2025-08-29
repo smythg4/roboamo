@@ -219,6 +219,10 @@
     @apply inline-flex items-center px-2 py-0.5 rounded-full text-center text-xs font-medium bg-blue-100 text-blue-800;
   }
 
+  .role-badge--locked {
+    @apply bg-yellow-100 text-yellow-800 border border-yellow-300;
+  }
+
   .status-badge-tar {
     @apply inline-flex items-center px-2 py-0.5 rounded-full text-center text-xs font-medium bg-purple-100 text-purple-800;
   }

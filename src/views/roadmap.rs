@@ -194,12 +194,6 @@ pub fn ProductRoadmap() -> Element {
                             }
                             IssueCard {
                                 severity: "low",
-                                title: "Duplicate Qualifications",
-                                description: "Some personnel show duplicate qualification entries",
-                                workaround: "Duplicates are automatically filtered in final output"
-                            }
-                            IssueCard {
-                                severity: "low",
                                 title: "Browser Memory Limits",
                                 description: "Large multi-squadron files may approach browser memory limits",
                                 workaround: "Current single-squadron usage well within safe limits. Multi-squadron batching planned."

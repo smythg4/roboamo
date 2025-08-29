@@ -1,7 +1,7 @@
 use crate::engine::team::{Position, Team};
 use anyhow::{anyhow, Result};
 use serde::Deserialize;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
 // everything related to qualification footprint requirements
@@ -94,10 +94,10 @@ pub fn parse_asm_file(data: Rc<Vec<u8>>) -> Result<Vec<Person>> {
                     name: name.to_string(),
                     raterank: raterank.to_string(),
                     duty_status: DutyStatus::SELRES, // this will be overridden later if needed
-                    qualifications: vec![],
+                    qualifications: HashSet::new(),
                     prd: None,
                 });
-                person.qualifications.push(qual);
+                person.qualifications.insert(qual);
             }
         }
     }

@@ -1,4 +1,5 @@
 use chrono::NaiveDate;
+use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -7,7 +8,7 @@ pub struct Person {
     pub name: String,
     pub raterank: String,
     pub duty_status: DutyStatus,
-    pub qualifications: Vec<String>,
+    pub qualifications: HashSet<String>,
     pub prd: Option<NaiveDate>,
 }
 

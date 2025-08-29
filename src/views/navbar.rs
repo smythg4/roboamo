@@ -14,7 +14,7 @@ pub fn Navbar() -> Element {
 
     rsx! {
         div {
-            class: "sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm",
+            class: "sticky top-0 z-[70] bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm",
 
             // Main navbar container
             div {
@@ -121,7 +121,7 @@ pub fn Navbar() -> Element {
                                     }
                                 }
                                 div {
-                                    class: "absolute hidden group-hover:block top-full left-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50",
+                                    class: "absolute hidden group-hover:block top-full left-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-[60]",
                                     // List of file upload links
                                     for (idx, page) in PAGES.iter().enumerate() {
                                         if idx <= n || idx == 0 {
