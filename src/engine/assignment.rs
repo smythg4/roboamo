@@ -2,16 +2,25 @@ use std::collections::{HashMap, HashSet};
 
 use crate::engine::flow_graph::FlowGraph;
 use crate::engine::person::{DutyStatus, Person};
-use crate::engine::team::Team;
+use crate::engine::team::{Position, Team};
 use std::fmt::{Display, Formatter};
 
 use std::rc::Rc;
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
-struct RoleId {
-    team: String,
-    qualification: String,
-    instance: u32,
+pub struct RoleId {
+    pub team: String,
+    pub qualification: String,
+    pub instance: u32,
+}
+
+impl From<RoleId> for Position {
+    fn from(val: RoleId) -> Self {
+        Position {
+            qualification: val.qualification,
+            instance: val.instance,
+        }
+    }
 }
 
 pub struct AssignmentSolver {
@@ -40,7 +49,7 @@ impl AssignmentSolver {
         let num_people = people.len();
         let num_roles = teams
             .iter()
-            .map(|t| t.required_positions.iter().map(|p| p.count).sum::<usize>())
+            .map(|t| t.required_positions.len())
             .sum::<usize>();
         let num_teams = teams.len();
         let total_nodes = 1 + num_people + num_roles + num_teams + 1;
@@ -74,22 +83,12 @@ impl AssignmentSolver {
             let locked_people: HashSet<String> =
                 locks.iter().map(|al| al.person_name.clone()).collect();
 
-            let mut instance_counters: HashMap<(String, String), u32> = HashMap::new();
-
             let locked_role_ids: HashSet<RoleId> = locks
                 .iter()
                 .filter_map(|al| {
-                    if let (Some(team), Some(qual)) = (&al.team_name, &al.qualification) {
+                    if let (Some(team), Some(position)) = (&al.team_name, &al.position) {
                         // update this logic to dynamically calculate the instance to lock
-                        let key = (team.clone(), qual.clone());
-                        let instance = *instance_counters.get(&key).unwrap_or(&0);
-                        instance_counters.insert(key, instance + 1);
-
-                        Some(RoleId {
-                            team: team.clone(),
-                            qualification: qual.clone(),
-                            instance,
-                        })
+                        Some(position.into_role_id(team))
                     } else {
                         None
                     }
@@ -114,18 +113,12 @@ impl AssignmentSolver {
         // role nodes
         for team in teams {
             for position in &team.required_positions {
-                for instance in 0..position.count {
-                    let role_id = RoleId {
-                        team: team.name.clone(),
-                        qualification: position.qualification.clone(),
-                        instance: instance as u32,
-                    };
+                let role_id = position.into_role_id(&team.name);
 
-                    if !locked_role_ids.contains(&role_id) {
-                        self.role_to_node.insert(role_id.clone(), node_idx);
-                        self.node_to_role.insert(node_idx, role_id);
-                        node_idx += 1;
-                    }
+                if !locked_role_ids.contains(&role_id) {
+                    self.role_to_node.insert(role_id.clone(), node_idx);
+                    self.node_to_role.insert(node_idx, role_id);
+                    node_idx += 1;
                 }
             }
         }
@@ -172,11 +165,7 @@ impl AssignmentSolver {
     fn add_team_to_sink_edges(&mut self, teams: &[Team]) {
         for team in teams {
             let team_node = self.team_to_node[&team.name];
-            let team_capacity = team
-                .required_positions
-                .iter()
-                .map(|p| p.count)
-                .sum::<usize>() as i32;
+            let team_capacity = team.required_positions.len() as i32;
 
             self.graph
                 .add_edge(team_node, self.sink_node, team_capacity, 0);
@@ -254,7 +243,7 @@ impl AssignmentSolver {
                         assignments.push(FlowAssignment {
                             person_name: person_name.clone(),
                             team: role_id.team.clone(),
-                            qualification: role_id.qualification.clone(),
+                            position: role_id.clone().into(),
                             manual_override: false,
                         });
                     }
@@ -305,7 +294,7 @@ impl AssignmentSolver {
 pub struct FlowAssignment {
     pub person_name: String,
     pub team: String,
-    pub qualification: String,
+    pub position: Position,
     pub manual_override: bool,
 }
 
@@ -313,9 +302,15 @@ pub struct FlowAssignment {
 pub struct Assignment {
     pub person: Rc<Person>,
     pub team_name: String,
-    pub qualification: String,
+    pub position: Position,
     pub score: i32,
     pub manual_override: bool,
+}
+
+impl Assignment {
+    pub fn role_id(&self) -> String {
+        self.position.role_id(&self.team_name)
+    }
 }
 
 impl Display for Assignment {
@@ -323,7 +318,7 @@ impl Display for Assignment {
         write!(
             f,
             "<{}> {} as {}",
-            &self.score, &self.person, &self.qualification
+            &self.score, &self.person, &self.position.qualification
         )
     }
 }
@@ -339,5 +334,5 @@ pub struct AssignmentPlan {
 pub struct AssignmentLock {
     pub person_name: String,
     pub team_name: Option<String>,
-    pub qualification: Option<String>,
+    pub position: Option<Position>,
 }

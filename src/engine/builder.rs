@@ -216,11 +216,11 @@ pub fn generate_assignments(
     let mut flow_assignments = solver.extract_assignments();
     if let Some(locks) = assignment_locks {
         for lock in locks {
-            if let (Some(team_name), Some(qualification)) = (lock.team_name, lock.qualification) {
+            if let (Some(team_name), Some(position)) = (lock.team_name, lock.position) {
                 flow_assignments.push(FlowAssignment {
                     person_name: lock.person_name,
                     team: team_name,
-                    qualification,
+                    position,
                     manual_override: true,
                 });
             }
@@ -259,7 +259,7 @@ pub fn build_assignment_plan(
         assignments.push(Assignment {
             person: Rc::new(person.clone()),
             team_name: a.team.clone(),
-            qualification: a.qualification.clone(),
+            position: a.position.clone(),
             score: 1,
             manual_override: a.manual_override,
         });
@@ -268,21 +268,16 @@ pub fn build_assignment_plan(
     let mut unfilled_positions = vec![];
     for team in teams {
         for position in &team.required_positions {
-            let req = position.count;
-            let have = flow_assignments
-                .iter()
-                .filter(|a| a.qualification == position.qualification && a.team == team.name)
-                .count();
-            if have < req {
-                for _ in 0..(req - have) {
-                    unfilled_positions.push((team.name.clone(), position.qualification.clone()))
-                }
+            let role_id = position.role_id(&team.name);
+            let is_filled = assignments.iter().any(|a| a.role_id() == role_id);
+            if !is_filled {
+                unfilled_positions.push((team.name.clone(), role_id));
             }
         }
     }
 
     Ok(AssignmentPlan {
-        unassigned_people: Rc::new(unassigned_people.iter().map(|p| *p).cloned().collect()),
+        unassigned_people: Rc::new(unassigned_people.iter().copied().cloned().collect()),
         assignments,
         unfilled_positions,
     })

@@ -26,11 +26,13 @@ pub fn parse_requirements(data: Rc<Vec<u8>>) -> Result<Vec<Team>> {
             name: record.team_name.clone(),
             required_positions: Vec::new(),
         });
-        let position = Position {
-            qualification: record.qual_name.clone(),
-            count: record.qual_qty,
-        };
-        (*team).required_positions.push(position);
+        for instance in 1..=record.qual_qty {
+            let position = Position {
+                qualification: record.qual_name.clone(),
+                instance: instance as u32,
+            };
+            team.required_positions.push(position);
+        }
     }
 
     Ok(teams.into_values().collect())

@@ -12,7 +12,7 @@ use crate::engine::{
     assignment::{AssignmentLock, FlowAssignment},
     builder::{build_assignment_plan, generate_assignments, AssignmentResult},
     person::{DutyStatus, Person},
-    team::Team,
+    team::{Position, Team},
 };
 
 // Local crate imports - other
@@ -27,7 +27,7 @@ enum InteractionMode {
 
 #[component]
 pub fn Results() -> Element {
-    let mut search_query = use_signal(|| String::new());
+    let mut search_query = use_signal(String::new);
     // Subscribe to app state changes
     let app_state = use_context::<Signal<AppState>>();
     let mut interaction_mode = use_signal(|| InteractionMode::ViewOnly);
@@ -37,9 +37,9 @@ pub fn Results() -> Element {
     // Add the selected date signal - default to today
     let mut selected_date = use_signal(|| chrono::Utc::now().date_naive());
     let mut selected_assignments =
-        use_signal(|| Vec::<(String, Option<String>, Option<String>)>::new()); // (person_name, team_name, qualification)
+        use_signal(Vec::<(String, Option<String>, Option<Position>)>::new); // (person_name, team_name, position)
 
-    let mut persistent_locks = use_signal(|| HashMap::<(String, String), String>::new());
+    let mut persistent_locks = use_signal(HashMap::<(String, Position), String>::new);
     use_effect(move || {
         // Read app state to trigger recomputation on changes
         let _ = app_state();
@@ -49,10 +49,10 @@ pub fn Results() -> Element {
         let all_locks = if !current_persistent_locks.is_empty() {
             let assignment_locks = current_persistent_locks
                 .iter()
-                .map(|((team, qual), person)| AssignmentLock {
+                .map(|((team_name, position), person)| AssignmentLock {
                     person_name: person.clone(),
-                    team_name: Some(team.clone()),
-                    qualification: Some(qual.clone()),
+                    team_name: Some(team_name.clone()),
+                    position: Some(position.clone()),
                 })
                 .collect();
             Some(assignment_locks)
@@ -123,9 +123,7 @@ pub fn Results() -> Element {
         .map(|team| {
             let team_assignments: Vec<_> = assignments
                 .assignments
-                .iter()
-                .cloned()
-                .filter(|a| a.team_name == team.name)
+                .iter().filter(|&a| a.team_name == team.name).cloned()
                 .sorted_by_key(|a| !a.manual_override)
                 .collect();
             (team, team_assignments)
@@ -189,14 +187,15 @@ pub fn Results() -> Element {
                     if interaction_mode() == InteractionMode::Swap && selected_assignments().len() == 2 {
                         // Execute swap
                         let selections = selected_assignments();
-                        let (person1, team1, qual1) = &selections[0];
-                        let (person2, team2, qual2) = &selections[1];
+                        let (person1, team1, pos1) = &selections[0];
+                        let (person2, team2, pos2) = &selections[1];
+
                         persistent_locks.with_mut(|locks| {
-                            if let (Some(team), Some(qual)) = (team2, qual2) {
-                                locks.insert((team.clone(), qual.clone()), person1.clone());
+                            if let (Some(team), Some(pos)) = (team2, pos2) {
+                                locks.insert((team.clone(), pos.clone()), person1.clone());
                             }
-                            if let (Some(team), Some(qual)) = (team1, qual1) {
-                                locks.insert((team.clone(), qual.clone()), person2.clone());
+                            if let (Some(team), Some(pos)) = (team1, pos1) {
+                                locks.insert((team.clone(), pos.clone()), person2.clone());
                             }
                         });
                         selected_assignments.set(vec![]);
@@ -226,9 +225,9 @@ pub fn Results() -> Element {
                         // Execute locks
                         let selections = selected_assignments();
                         persistent_locks.with_mut(|locks| {
-                            for (person, team, qual) in selections {
-                                if let (Some(team), Some(qual)) = (team, qual) {
-                                    locks.insert((team, qual), person);
+                            for (person, team, pos) in selections {
+                                if let (Some(team), Some(pos)) = (team, pos) {
+                                    locks.insert((team, pos), person);
                                 }
                             }
                         });
@@ -311,16 +310,25 @@ pub fn Results() -> Element {
                                 tbody {
                                     for assignment in team_assignments {
                                         tr {
-                                            class: if is_assignment_selected(
+                                            class: {if is_assignment_selected(
                                                 &selected_assignments(),
                                                 &assignment.person.name,
                                                 &assignment.team_name,
-                                                &assignment.qualification,
+                                                &assignment.position,
                                             ) {
                                                 "table-row bg-yellow-50 border-l-4 border-l-yellow-400"
-                                            } else {
-                                                "table-row"
-                                            },
+                                            } else if is_swap_eligible(
+                                        interaction_mode(),
+                                        &selected_assignments(),
+                                        &assignment.person.name,
+                                        Some(assignment.team_name.as_str()),
+                                        Some(&assignment.position),
+                                        people,
+                                    ) {
+                                        "table-row bg-emerald-100 border-l-4 border-l-emerald-400"
+                                    } else {
+                                        "table-row"
+                                    }},
                                             td {
                                                 class: "table-cell-muted",
                                                 //if interaction_mode() != InteractionMode::ViewOnly {
@@ -335,7 +343,7 @@ pub fn Results() -> Element {
                                                             &selected_assignments(),
                                                             &assignment.person.name,
                                                             &assignment.team_name,
-                                                            &assignment.qualification,
+                                                            &assignment.position,
                                                         ),
                                                         disabled: {
                                                             let current_selected = selected_assignments();
@@ -343,7 +351,7 @@ pub fn Results() -> Element {
                                                                 &current_selected,
                                                                 &assignment.person.name,
                                                                 &assignment.team_name,
-                                                                &assignment.qualification,
+                                                                &assignment.position,
                                                             );
                                                             is_checkbox_disabled(interaction_mode(), current_selected.len(), is_currently_selected)
                                                         },
@@ -351,7 +359,7 @@ pub fn Results() -> Element {
                                                             let assignment_id = (
                                                                 assignment.person.name.clone(),
                                                                 Some(assignment.team_name.clone()),
-                                                                Some(assignment.qualification.clone()),
+                                                                Some(assignment.position.clone()),
                                                             );
                                                             let new_selections = toggle_assignment_selection(
                                                                 assignment_id,
@@ -380,7 +388,7 @@ pub fn Results() -> Element {
                                                     } else {
                                                         "role-badge"
                                                     },
-                                                    "{assignment.qualification}"
+                                                    "{assignment.position.qualification}"
                                                 }
                                             }
                                             td {
@@ -484,7 +492,18 @@ pub fn Results() -> Element {
                                         p.qualifications.iter().any(|q| q.to_lowercase().contains(&query))
                                     }) {
                                 tr {
-                                    class: "table-row",
+                                    class: if is_swap_eligible(
+                                        interaction_mode(),
+                                        &selected_assignments(),
+                                        person.get_name(),
+                                        None,
+                                        None,
+                                        people,
+                                    ) {
+                                        "table-row bg-emerald-100 border-l-4 border-l-emerald-400"
+                                    } else {
+                                        "table-row"
+                                    },
                                     td {
                                         class: "table-cell-muted",
                                         input {
@@ -609,24 +628,22 @@ fn is_checkbox_disabled(
 }
 
 fn is_assignment_selected(
-    selections: &[(String, Option<String>, Option<String>)],
+    selections: &[(String, Option<String>, Option<Position>)],
     person_name: &str,
     team_name: &str,
-    qualification: &str,
+    position: &Position,
 ) -> bool {
-    selections.iter().any(|(name, team, qual)| {
-        name == person_name
-            && team.as_deref() == Some(&team_name)
-            && qual.as_deref() == Some(&qualification)
+    selections.iter().any(|(name, team, pos)| {
+        name == person_name && team.as_deref() == Some(team_name) && pos.as_ref() == Some(position)
     })
 }
 
 fn toggle_assignment_selection(
-    assignment_id: (String, Option<String>, Option<String>),
+    assignment_id: (String, Option<String>, Option<Position>),
     is_checked: bool,
-    current_selections: Vec<(String, Option<String>, Option<String>)>,
+    current_selections: Vec<(String, Option<String>, Option<Position>)>,
     interaction_mode: InteractionMode,
-) -> Vec<(String, Option<String>, Option<String>)> {
+) -> Vec<(String, Option<String>, Option<Position>)> {
     if is_checked {
         let mut updated = current_selections;
         if should_add_selection(interaction_mode, updated.len()) {
@@ -642,10 +659,82 @@ fn toggle_assignment_selection(
 }
 
 fn is_unassigned_selected(
-    selections: &[(String, Option<String>, Option<String>)],
+    selections: &[(String, Option<String>, Option<Position>)],
     person_name: &str,
 ) -> bool {
     selections
         .iter()
-        .any(|(name, team, qual)| name == person_name && team.is_none() && qual.is_none())
+        .any(|(name, team, pos)| name == person_name && team.is_none() && pos.is_none())
+}
+
+fn is_swap_eligible(
+    interaction_mode: InteractionMode,
+    current_selections: &[(String, Option<String>, Option<Position>)],
+    assignment_person: &str,
+    assignment_team: Option<&str>,
+    assignment_position: Option<&Position>,
+    people: &[Person],
+) -> bool {
+    // Only relevant in swap mode
+    if interaction_mode != InteractionMode::Swap {
+        return false;
+    }
+
+    // Need exactly 1 person selected to show eligibility
+    if current_selections.len() != 1 {
+        return false;
+    }
+
+    // Don't highlight the currently selected person
+    let is_currently_selected = match (assignment_team, assignment_position) {
+        (Some(team), Some(pos)) => {
+            is_assignment_selected(current_selections, assignment_person, team, pos)
+        }
+        _ => {
+            // For unassigned people, check if they're selected as unassigned
+            current_selections.iter().any(|(name, team, pos)| {
+                name == assignment_person && team.is_none() && pos.is_none()
+            })
+        }
+    };
+
+    if is_currently_selected {
+        return false;
+    }
+
+    // Get the selected person and their position
+    let (selected_person_name, _selected_team, selected_position) = &current_selections[0];
+    let Some(selected_position) = selected_position else {
+        return false;
+    };
+
+    // Find both people in the people list
+    let Some(selected_person) = people.iter().find(|p| &p.name == selected_person_name) else {
+        return false;
+    };
+    let Some(target_person) = people.iter().find(|p| p.name == assignment_person) else {
+        return false;
+    };
+
+    if assignment_position.is_none() {
+        // This is an unassigned person - only check if they can do the selected job
+        return target_person
+            .qualifications
+            .contains(&selected_position.qualification);
+    }
+
+    // For assigned people, check mutual qualification
+    let assignment_position = assignment_position.unwrap(); // Safe because we checked is_none() above
+
+    // Check mutual qualification:
+    // 1. Can selected person do target's job?
+    let can_selected_do_target = selected_person
+        .qualifications
+        .contains(&assignment_position.qualification);
+    // 2. Can target person do selected's job?
+    let can_target_do_selected = target_person
+        .qualifications
+        .contains(&selected_position.qualification);
+
+    can_selected_do_target && can_target_do_selected
 }

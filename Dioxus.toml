@@ -18,9 +18,5 @@ index_on_404 = true
 
 # include `assets` in web platform
 [web.resource.dev]
-# Additional CSS style files
-style = ["input.css"]
-# Additional JavaScript files
-script = []
 # Add this line to serve demo files as static assets
 assets = ["assets"]

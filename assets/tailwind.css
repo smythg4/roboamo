@@ -41,6 +41,9 @@
     --color-green-700: oklch(52.7% 0.154 150.069);
     --color-green-800: oklch(44.8% 0.119 151.328);
     --color-emerald-50: oklch(97.9% 0.021 166.113);
+    --color-emerald-100: oklch(95% 0.052 163.051);
+    --color-emerald-200: oklch(90.5% 0.093 164.15);
+    --color-emerald-400: oklch(76.5% 0.177 163.223);
     --color-cyan-50: oklch(98.4% 0.019 200.873);
     --color-blue-50: oklch(97% 0.014 254.604);
     --color-blue-100: oklch(93.2% 0.032 255.585);
@@ -812,6 +815,12 @@
   .border-yellow-200 {
     border-color: var(--color-yellow-200);
   }
+  .border-l-emerald-400 {
+    border-left-color: var(--color-emerald-400);
+  }
+  .border-l-green-400 {
+    border-left-color: var(--color-green-400);
+  }
   .border-l-yellow-400 {
     border-left-color: var(--color-yellow-400);
   }
@@ -826,6 +835,12 @@
   }
   .bg-blue-600 {
     background-color: var(--color-blue-600);
+  }
+  .bg-emerald-100 {
+    background-color: var(--color-emerald-100);
+  }
+  .bg-emerald-200 {
+    background-color: var(--color-emerald-200);
   }
   .bg-gray-50 {
     background-color: var(--color-gray-50);
@@ -874,6 +889,9 @@
   }
   .bg-red-100 {
     background-color: var(--color-red-100);
+  }
+  .bg-red-200 {
+    background-color: var(--color-red-200);
   }
   .bg-red-500 {
     background-color: var(--color-red-500);

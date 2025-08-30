@@ -5,6 +5,7 @@ use crate::utilities::AppState;
 use crate::utilities::PreviewType;
 use crate::utilities::{parse_asm_file, parse_fltmps_file, parse_qual_defs, parse_requirements};
 
+use std::collections::HashMap;
 use std::rc::Rc;
 
 #[component]
@@ -65,6 +66,18 @@ pub fn Preview(preview_type: PreviewType) -> Element {
 pub fn RequirementsPreview(data: Rc<Vec<u8>>) -> Element {
     match parse_requirements(data) {
         Ok(teams) => {
+            let teams_with_counts: Vec<_> = teams
+                .iter()
+                .map(|team| {
+                    let mut team_qual_counts = HashMap::new();
+                    for pos in &team.required_positions {
+                        *team_qual_counts.entry(&pos.qualification).or_insert(0) += 1;
+                    }
+                    let mut sorted_quals: Vec<_> = team_qual_counts.into_iter().collect();
+                    sorted_quals.sort_by(|a, b| a.0.cmp(b.0));
+                    (team, sorted_quals)
+                })
+                .collect();
             rsx! {
                 div {
                     class: "space-y-6",
@@ -94,7 +107,7 @@ pub fn RequirementsPreview(data: Rc<Vec<u8>>) -> Element {
                     // Teams grid
                     div {
                         class: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4",
-                        for team in teams {
+                        for (team, qual_count) in teams_with_counts {
                             div {
                                 class: "bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200",
                                 div {
@@ -115,16 +128,16 @@ pub fn RequirementsPreview(data: Rc<Vec<u8>>) -> Element {
                                     } else {
                                         div {
                                             class: "space-y-2",
-                                            for req in team.required_positions {
+                                            for (qual, count) in qual_count {
                                                 div {
                                                     class: "flex justify-between items-center py-1.5 px-2 rounded hover:bg-gray-50",
                                                     span {
                                                         class: "text-sm font-medium text-gray-700",
-                                                        "{req.qualification}"
+                                                        "{qual}"
                                                     }
                                                     span {
                                                         class: "inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 text-xs font-bold text-blue-700 bg-blue-100 rounded-full",
-                                                        "{req.count}"
+                                                        "{count}"
                                                     }
                                                 }
                                             }
@@ -172,7 +185,7 @@ pub fn RequirementsPreview(data: Rc<Vec<u8>>) -> Element {
 
 #[component]
 pub fn QualDefPreview(data: Rc<Vec<u8>>) -> Element {
-    let mut search_query = use_signal(|| String::new());
+    let mut search_query = use_signal(String::new);
     match parse_qual_defs(data) {
         Ok(quals) => {
             rsx! {
@@ -274,7 +287,7 @@ pub fn QualDefPreview(data: Rc<Vec<u8>>) -> Element {
 
 #[component]
 pub fn ASMPreview(data: Rc<Vec<u8>>) -> Element {
-    let mut search_term = use_signal(|| String::new());
+    let mut search_term = use_signal(String::new);
 
     let people_resource = use_resource(move || {
         let data = data.clone();
@@ -423,7 +436,7 @@ pub fn ASMPreview(data: Rc<Vec<u8>>) -> Element {
 
 #[component]
 pub fn FLTMPSPreview(data: Rc<Vec<u8>>) -> Element {
-    let mut search_term = use_signal(|| String::new());
+    let mut search_term = use_signal(String::new);
 
     let fltmps_resource = use_resource(move || {
         let data = data.clone();
@@ -439,7 +452,7 @@ pub fn FLTMPSPreview(data: Rc<Vec<u8>>) -> Element {
                     let term_lower = term.to_lowercase();
                     name.to_lowercase().contains(&term_lower)
                 })
-                .map(|(name, date)| (name.clone(), date.clone()))
+                .map(|(name, date)| (name.clone(), *date))
                 .collect();
             filtered_prds
         }
