@@ -300,9 +300,9 @@ pub fn Results() -> Element {
                                     class: "table-header",
                                     tr {
                                         th { class: "table-header-cell", "" }
+                                        th { class: "table-header-cell", "Role" }
                                         th { class: "table-header-cell", "Name" }
                                         th { class: "table-header-cell", "Rate/Rank" }
-                                        th { class: "table-header-cell", "Role" }
                                         th { class: "table-header-cell", "Status" }
                                         th { class: "table-header-cell", "PRD" }
                                     }
@@ -373,14 +373,6 @@ pub fn Results() -> Element {
                                                 //}
                                             }
                                             td {
-                                                class: "table-cell-name",
-                                                "{assignment.person.name}"
-                                            }
-                                            td {
-                                                class: "table-cell-muted",
-                                                "{assignment.person.raterank}"
-                                            }
-                                            td {
                                                 class: "table-cell",
                                                 span {
                                                     class: if assignment.manual_override {
@@ -390,6 +382,14 @@ pub fn Results() -> Element {
                                                     },
                                                     "{assignment.position.qualification}"
                                                 }
+                                            }
+                                            td {
+                                                class: "table-cell-name",
+                                                "{assignment.person.name}"
+                                            }
+                                            td {
+                                                class: "table-cell-muted",
+                                                "{assignment.person.raterank}"
                                             }
                                             td {
                                                 class: "table-cell",

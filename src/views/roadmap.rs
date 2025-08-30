@@ -41,99 +41,69 @@ pub fn ProductRoadmap() -> Element {
                         div {
                             class: "p-6 space-y-4",
 
-                            // COMPLETED
+                            // MAJOR COMPLETED FEATURES
                             FeatureCard {
-                                icon: "📄",
-                                title: "Template Downloads",
-                                description: "Downloadable CSV and XLSX templates with proper formatting and examples",
-                                status: "complete"
-                            }
-                            FeatureCard {
-                                icon: "🔍",
-                                title: "Smart Search",
-                                description: "Quick search across all data to validate specific personnel",
-                                status: "complete"
-                            }
-                            FeatureCard {
-                                icon: "💾",
-                                title: "Memory Architecture Optimization",
-                                description: "Streamlined data structures and parsing workflows",
-                                status: "complete"
-                            }
-                            FeatureCard {
-                                icon: "📅",
-                                title: "Temporal Analysis",
-                                description: "Track requirements and shortfalls over time",
+                                icon: "🎯",
+                                title: "Role-Based Position Tracking",
+                                description: "Eliminated single assignment lock limitation with granular position instances and intelligent swap eligibility highlighting",
                                 status: "complete"
                             }
                             FeatureCard {
                                 icon: "🔄",
-                                title: "Assignment Override",
-                                description: "Manually swap assigned personnel between teams or with unassigned individuals",
+                                title: "Advanced Assignment Management",
+                                description: "Full swap/lock system with intelligent eligibility highlighting - fantasy football-inspired roster management UI to come",
                                 status: "complete"
                             }
-                            // IN PROGRESS
+                            
+                            // CURRENT PRIORITIES
                             FeatureCard {
                                 icon: "💾",
-                                title: "Save State Export",
-                                description: "Export complete analysis sessions as JSON including all data, locks, and assignments for backup and collaboration",
+                                title: "Save State System",
+                                description: "Export/import complete analysis sessions as JSON for backup, collaboration, and audit trails",
                                 status: "in-progress"
                             }
-                            // PLANNED (Core Features)
                             FeatureCard {
-                                icon: "🏢",
-                                title: "Multi-Squadron Support",
-                                description: "Manage multiple squadrons with executive dashboard views",
+                                icon: "👤",
+                                title: "PersonCard Tooltips",
+                                description: "Hover over personnel names to see detailed cards with qualifications, status, and current assignment",
                                 status: "planned"
                             }
                             FeatureCard {
-                                icon: "🛡️",
-                                title: "Security Hardening",
-                                description: "Enhanced data clearing and audit logging",
+                                icon: "🔓",
+                                title: "Individual Unlock Buttons",
+                                description: "Quick unlock buttons next to each locked assignment for granular lock management",
+                                status: "planned"
+                            }
+                            FeatureCard {
+                                icon: "📈",
+                                title: "12-Month Manning Projection",
+                                description: "Strategic time-series visualization showing unfilled positions and SELRES requirements as TAR personnel rotate out",
+                                status: "planned"
+                            }
+                            
+                            // STRATEGIC FEATURES
+                            FeatureCard {
+                                icon: "🏢",
+                                title: "Multi-Squadron Support",
+                                description: "Executive dashboard managing multiple squadrons simultaneously with comparative analytics",
                                 status: "planned"
                             }
                             FeatureCard {
                                 icon: "🦺",
-                                title: "Weighted Teams",
-                                description: "Prioritize certain manning priorities over others (e.g. Home Guard is more important than Det)",
+                                title: "Weighted Team Priorities",
+                                description: "Prioritize critical teams over others (e.g. Home Guard takes precedence over Det assignments)",
                                 status: "planned"
                             }
                             FeatureCard {
-                                icon: "🔮",
-                                title: "What-If Analysis",
-                                description: "Explore and compare multiple scenarios",
-                                status: "planned"
-                            }
-
-                            // RESEARCH (Advanced Features)
-                            FeatureCard {
-                                icon: "⚖️",
-                                title: "Assignment Priority Weighting",
-                                description: "Customize how heavily the system weighs factors like duty status, aircrew availability, and leadership experience",
+                                icon: "⚙️",
+                                title: "Composite Qualification Rules",
+                                description: "Define custom qualification combinations (e.g., '200 CDI' = requires both '210 CDI' AND '220 CDI')",
                                 status: "research"
                             }
                             FeatureCard {
                                 icon: "📝",
-                                title: "Live Data Editing",
-                                description: "Edit uploaded data directly in the browser before processing",
-                                status: "research"
-                            }
-                            FeatureCard {
-                                icon: "⚙️",
-                                title: "Custom Qualification Rules",
-                                description: "Define composite qualifications (e.g., 200 CDI = 210 CDI AND 220 CDI)",
-                                status: "research"
-                            }
-                            FeatureCard {
-                                icon: "🤝",
-                                title: "Inter-Command Trading",
-                                description: "Propose personnel trades between commands to address shortfalls",
-                                status: "research"
-                            }
-                            FeatureCard {
-                                icon: "💬",
-                                title: "Feedback System",
-                                description: "Built-in comment section for user suggestions and bug reports",
+                                title: "In-Browser Data Editing",
+                                description: "Edit uploaded personnel and requirements data directly in the browser before running analysis",
                                 status: "research"
                             }
                         }

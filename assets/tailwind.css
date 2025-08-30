@@ -26,7 +26,6 @@
     --color-yellow-50: oklch(98.7% 0.026 102.212);
     --color-yellow-100: oklch(97.3% 0.071 103.193);
     --color-yellow-200: oklch(94.5% 0.129 101.54);
-    --color-yellow-300: oklch(90.5% 0.182 98.111);
     --color-yellow-400: oklch(85.2% 0.199 91.936);
     --color-yellow-600: oklch(68.1% 0.162 75.834);
     --color-yellow-700: oklch(55.4% 0.135 66.442);
@@ -42,7 +41,6 @@
     --color-green-800: oklch(44.8% 0.119 151.328);
     --color-emerald-50: oklch(97.9% 0.021 166.113);
     --color-emerald-100: oklch(95% 0.052 163.051);
-    --color-emerald-200: oklch(90.5% 0.093 164.15);
     --color-emerald-400: oklch(76.5% 0.177 163.223);
     --color-cyan-50: oklch(98.4% 0.019 200.873);
     --color-blue-50: oklch(97% 0.014 254.604);
@@ -818,9 +816,6 @@
   .border-l-emerald-400 {
     border-left-color: var(--color-emerald-400);
   }
-  .border-l-green-400 {
-    border-left-color: var(--color-green-400);
-  }
   .border-l-yellow-400 {
     border-left-color: var(--color-yellow-400);
   }
@@ -838,9 +833,6 @@
   }
   .bg-emerald-100 {
     background-color: var(--color-emerald-100);
-  }
-  .bg-emerald-200 {
-    background-color: var(--color-emerald-200);
   }
   .bg-gray-50 {
     background-color: var(--color-gray-50);
@@ -889,9 +881,6 @@
   }
   .bg-red-100 {
     background-color: var(--color-red-100);
-  }
-  .bg-red-200 {
-    background-color: var(--color-red-200);
   }
   .bg-red-500 {
     background-color: var(--color-red-500);
@@ -2203,7 +2192,8 @@
   .role-badge {
     display: inline-flex;
     align-items: center;
-    border-radius: calc(infinity * 1px);
+    border-style: var(--tw-border-style);
+    border-width: 1px;
     background-color: var(--color-blue-100);
     padding-inline: calc(var(--spacing) * 2);
     padding-block: calc(var(--spacing) * 0.5);
@@ -2217,7 +2207,6 @@
   .role-badge--locked {
     border-style: var(--tw-border-style);
     border-width: 1px;
-    border-color: var(--color-yellow-300);
     background-color: var(--color-yellow-100);
     color: var(--color-yellow-800);
   }
