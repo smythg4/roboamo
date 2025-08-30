@@ -182,12 +182,6 @@ pub fn ProductRoadmap() -> Element {
                             // LOW PRIORITY
                             IssueCard {
                                 severity: "low",
-                                title: "Single Assignment Lock Limit",
-                                description: "Each team role (e.g., 120 CDI, MMCPO) can only have one locked assignment at a time, even if the role requires multiple people",
-                                workaround: "Use algorithmic optimization for additional positions in multi-person roles, or clear and re-lock to change manual assignments"
-                            }
-                            IssueCard {
-                                severity: "low",
                                 title: "Qualification Name Matching",
                                 description: "ASM qualification names must exactly match qualification table entries (spaces, punctuation, etc.)",
                                 workaround: "Verify qual table entries precisely match ASM qualification text. Future fuzzy matching planned."
