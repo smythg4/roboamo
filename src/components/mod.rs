@@ -16,3 +16,6 @@ pub use search_bar::SearchBar;
 
 mod footer;
 pub use footer::Footer;
+
+mod player_card;
+pub use player_card::PlayerCard;

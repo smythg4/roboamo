@@ -54,7 +54,7 @@ pub fn ProductRoadmap() -> Element {
                                 description: "Full swap/lock system with intelligent eligibility highlighting - fantasy football-inspired roster management UI to come",
                                 status: "complete"
                             }
-                            
+
                             // CURRENT PRIORITIES
                             FeatureCard {
                                 icon: "💾",
@@ -80,7 +80,7 @@ pub fn ProductRoadmap() -> Element {
                                 description: "Strategic time-series visualization showing unfilled positions and SELRES requirements as TAR personnel rotate out",
                                 status: "planned"
                             }
-                            
+
                             // STRATEGIC FEATURES
                             FeatureCard {
                                 icon: "🏢",
