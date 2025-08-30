@@ -14,8 +14,15 @@ pub use preview::Preview;
 mod search_bar;
 pub use search_bar::SearchBar;
 
+mod interaction_bar;
+pub use interaction_bar::{InteractionAction, InteractionBar, InteractionMode};
+
 mod footer;
 pub use footer::Footer;
 
 mod player_card;
 pub use player_card::PlayerCard;
+
+// Domain-specific component modules
+pub mod assignment;
+pub use assignment::{AssignmentStats, RoleBadge, TeamCard, TeamRow, UnassignedTable};

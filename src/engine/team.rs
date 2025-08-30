@@ -1,6 +1,6 @@
 use crate::engine::assignment::RoleId;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Team {
     pub name: String,
     pub required_positions: Vec<Position>,

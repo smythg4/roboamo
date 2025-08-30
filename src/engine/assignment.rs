@@ -298,7 +298,7 @@ pub struct FlowAssignment {
     pub manual_override: bool,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Assignment {
     pub person: Rc<Person>,
     pub team_name: String,
@@ -323,7 +323,7 @@ impl Display for Assignment {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct AssignmentPlan {
     pub assignments: Vec<Assignment>,
     pub unfilled_positions: Vec<(String, String)>,

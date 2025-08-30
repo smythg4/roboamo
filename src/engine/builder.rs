@@ -45,9 +45,8 @@ fn get_qual_table(data: &HashMap<String, Vec<String>>) -> Result<HashMap<String,
     Ok(qual_table)
 }
 
-pub fn build_people(analysis_date: chrono::NaiveDate) -> Result<Vec<Person>> {
-    let app_state = use_context::<Signal<AppState>>();
-    let files = &app_state.read().files;
+pub fn build_people(analysis_date: chrono::NaiveDate, app_state: &AppState) -> Result<Vec<Person>> {
+    let files = &app_state.files;
 
     let parsed_quals = files
         .get("Qual Defs")
@@ -183,9 +182,8 @@ fn get_derivative_quals(name: &str, quals: &HashSet<String>) -> Vec<String> {
     extra_quals
 }
 
-fn build_teams() -> Result<Vec<Team>> {
-    let app_state = use_context::<Signal<AppState>>();
-    let files = &app_state.read().files;
+fn build_teams(app_state: &AppState) -> Result<Vec<Team>> {
+    let files = &app_state.files;
 
     let parsed_requirements = files
         .get("Requirements")
@@ -207,9 +205,10 @@ fn build_teams() -> Result<Vec<Team>> {
 pub fn generate_assignments(
     analysis_date: chrono::NaiveDate,
     assignment_locks: Option<Vec<AssignmentLock>>,
+    app_state: &AppState,
 ) -> Result<AssignmentResult> {
-    let people = Rc::new(build_people(analysis_date)?);
-    let teams = Rc::new(build_teams()?);
+    let people = Rc::new(build_people(analysis_date, app_state)?);
+    let teams = Rc::new(build_teams(app_state)?);
     let mut solver =
         AssignmentSolver::new(&people, &teams, analysis_date, assignment_locks.clone());
     let (_flow_count, _flow_cost) = solver.solve();

@@ -365,16 +365,10 @@ pub fn ASMPreview(data: Rc<Vec<u8>>) -> Element {
                 }
             }
 
-            // Search/filter bar
-            div {
-                class: "bg-white rounded-lg shadow-sm border border-gray-200 p-4",
-                input {
-                    r#type: "search",
-                    placeholder: "Search personnel by name or qual...",
-                    disabled: false,
-                    class: "w-full px-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
-                    oninput: move |evt| search_term.set(evt.value()),
-                }
+            SearchBar {
+                placeholder: "Search personnel by name or qual...",
+                value: search_term(),
+                onchange: move |value| search_term.set(value),
             }
 
             // Personnel list
@@ -533,16 +527,10 @@ pub fn FLTMPSPreview(data: Rc<Vec<u8>>) -> Element {
                     }
                 }
             }
-            // Search/filter bar
-            div {
-                class: "bg-white rounded-lg shadow-sm border border-gray-200 p-4",
-                input {
-                    r#type: "search",
-                    placeholder: "Search personnel by name...",
-                    disabled: false,
-                    class: "w-full px-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
-                    oninput: move |evt| search_term.set(evt.value()),
-                }
+            SearchBar {
+                placeholder: "Search personnel by name...",
+                value: search_term(),
+                onchange: move |value| search_term.set(value),
             }
             // PRD table
             div {

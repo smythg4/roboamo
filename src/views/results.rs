@@ -4,7 +4,6 @@ use std::rc::Rc;
 
 // External crate imports
 use chrono::prelude::*;
-use dioxus::html::MouseData;
 use dioxus::prelude::*;
 use itertools::Itertools;
 
@@ -12,41 +11,42 @@ use itertools::Itertools;
 use crate::engine::{
     assignment::{AssignmentLock, FlowAssignment},
     builder::{build_assignment_plan, generate_assignments, AssignmentResult},
-    person::{DutyStatus, Person},
+    person::Person,
     team::{Position, Team},
 };
 
 // Local crate imports - other
 use crate::{
-    components::{PlayerCard, SearchBar},
+    components::{AssignmentStats, InteractionMode, PlayerCard, TeamCard, UnassignedTable},
     utilities::AppState,
-    views::ErrorDisplay,
 };
 
-#[derive(Clone, Copy, PartialEq)]
-enum InteractionMode {
-    ViewOnly,
-    Swap,
-    Lock,
+// Context for shared assignment UI state
+#[derive(Clone)]
+pub struct AssignmentUIContext {
+    pub interaction_mode: Signal<InteractionMode>,
+    pub selected_assignments: Signal<Vec<(String, Option<String>, Option<Position>)>>,
+    pub people: ReadOnlySignal<Rc<Vec<Person>>>, // for eligibility calculations
 }
 
 #[component]
 pub fn Results() -> Element {
+    // Local UI state (not in context)
     let mut hovered_person = use_signal(|| None::<(Person, Option<String>)>); // (person, current assignment)
     let mut mouse_position = use_signal(|| (0.0, 0.0));
-    let mut search_query = use_signal(String::new);
+    let mut selected_date = use_signal(|| chrono::Utc::now().date_naive());
+    let mut persistent_locks = use_signal(HashMap::<(String, Position), String>::new);
+
     // Subscribe to app state changes
     let app_state = use_context::<Signal<AppState>>();
-    let mut interaction_mode = use_signal(|| InteractionMode::ViewOnly);
-    // Store just the raw data without the assignment plan
+
+    // Raw data storage
     let mut raw_data = use_signal(|| None::<(Vec<FlowAssignment>, Rc<Vec<Person>>, Rc<Vec<Team>>)>);
 
-    // Add the selected date signal - default to today
-    let mut selected_date = use_signal(|| chrono::Utc::now().date_naive());
+    // Context state - these will be provided to child components
+    let mut interaction_mode = use_signal(|| InteractionMode::ViewOnly);
     let mut selected_assignments =
-        use_signal(Vec::<(String, Option<String>, Option<Position>)>::new); // (person_name, team_name, position)
-
-    let mut persistent_locks = use_signal(HashMap::<(String, Position), String>::new);
+        use_signal(Vec::<(String, Option<String>, Option<Position>)>::new);
     use_effect(move || {
         // Read app state to trigger recomputation on changes
         let _ = app_state();
@@ -68,7 +68,7 @@ pub fn Results() -> Element {
         };
 
         // Generate fresh assignments
-        let data = match generate_assignments(selected_date(), all_locks) {
+        let data = match generate_assignments(selected_date(), all_locks, &app_state.read()) {
             Ok(AssignmentResult {
                 flow_assignments,
                 people,
@@ -83,8 +83,37 @@ pub fn Results() -> Element {
         raw_data.set(data);
     });
 
-    // Handle the case where assignments couldn't be generated
-    let Some((ref flow_assignments, ref people, ref teams)) = *raw_data.read() else {
+    // Build assignment plan using a memoized signal to avoid ownership issues
+    let assignments = use_memo(move || {
+        let raw_data_current = raw_data.read();
+        let Some((ref flow_assignments, ref people, ref teams)) = *raw_data_current else {
+            return None;
+        };
+
+        match build_assignment_plan(people, teams, flow_assignments) {
+            Ok(plan) => Some(plan),
+            Err(_e) => None, // TODO: better error handling
+        }
+    });
+
+    // Create the people signal for context
+    let people_signal = use_memo(move || {
+        let raw_data_current = raw_data.read();
+        match raw_data_current.as_ref() {
+            Some((_flow_assignments, people, _teams)) => people.clone(),
+            None => Rc::new(Vec::new()),
+        }
+    });
+
+    // Create the context
+    let ui_context = AssignmentUIContext {
+        interaction_mode,
+        selected_assignments,
+        people: people_signal.into(),
+    };
+
+    // Check if assignments were generated successfully
+    if assignments.read().is_none() {
         return rsx! {
             div {
                 class: "results-container",
@@ -101,76 +130,83 @@ pub fn Results() -> Element {
                 }
             }
         };
+    }
+
+    // Memoize unassigned people - only recalculates when assignments change
+    let unassigned_people = use_memo(move || {
+        let assignments_current = assignments.read();
+        let Some(ref assignments_plan) = *assignments_current else {
+            return Vec::new();
+        };
+
+        assignments_plan
+            .unassigned_people
+            .iter()
+            .sorted_by(|p, q| Ord::cmp(&q.qualifications.len(), &p.qualifications.len()))
+            .cloned()
+            .collect::<Vec<_>>()
+    });
+
+    // Memoize teams sorted by assignment count
+    let teams_sorted = use_memo(move || {
+        let assignments_current = assignments.read();
+        let Some(ref assignments_plan) = *assignments_current else {
+            return Vec::new();
+        };
+        let raw_data_current = raw_data.read();
+        let Some((_flow_assignments, _people, teams)) = raw_data_current.as_ref() else {
+            return Vec::new();
+        };
+
+        teams
+            .iter()
+            .map(|team| {
+                let assignment_count = assignments_plan
+                    .assignments
+                    .iter()
+                    .filter(|a| a.team_name == team.name)
+                    .count();
+                (team, assignment_count)
+            })
+            .sorted_by_key(|(_, count)| *count)
+            .map(|(team, _)| team.clone())
+            .collect::<Vec<_>>()
+    });
+
+    // Event handlers - these will be passed as props, not in context
+    let on_selection_change = move |((person_name, team, position), is_checked): (
+        (String, Option<String>, Option<Position>),
+        bool,
+    )| {
+        let assignment_id = (person_name, team, position);
+        let new_selections = toggle_assignment_selection(
+            assignment_id,
+            is_checked,
+            selected_assignments(),
+            interaction_mode(),
+        );
+        selected_assignments.set(new_selections);
     };
 
-    // Build the assignment plan here, where we can use the references
-    let assignments = match build_assignment_plan(people, teams, flow_assignments) {
-        Ok(plan) => plan,
-        Err(e) => {
-            //log::error!("Failed to build assignment plan: {}", e);
-            // Return empty plan or show error
-            return rsx! {
-                ErrorDisplay {
-                    error: format!("Failed to generate assignments: {}", e),
-                    retry: None
-                }
-            };
-        }
+    let on_person_hover =
+        move |(person, assignment, coords): (Person, Option<String>, (f64, f64))| {
+            hovered_person.set(Some((person, assignment)));
+            mouse_position.set(coords);
+        };
+
+    let on_person_leave = move |_| {
+        hovered_person.set(None);
     };
 
-    let unassigned_people: Vec<_> = assignments
-        .unassigned_people
-        .iter()
-        .sorted_by(|p, q| Ord::cmp(&q.qualifications.len(), &p.qualifications.len()))
-        .cloned()
-        .collect();
-
-    let teams_with_assignments: Vec<_> = teams
-        .iter()
-        .map(|team| {
-            let team_assignments: Vec<_> = assignments
-                .assignments
-                .iter()
-                .filter(|&a| a.team_name == team.name)
-                .cloned()
-                .sorted_by_key(|a| !a.manual_override)
-                .collect();
-            (team, team_assignments)
-        })
-        //.filter(|(_, team_assignments)| !team_assignments.is_empty())
-        .sorted_by_key(|(_, team_assignments)| team_assignments.len())
-        .collect();
-    let today = selected_date();
+    use_context_provider(|| ui_context);
 
     rsx! {
-    div {
-        class: "results-container",
+        div {
+            class: "results-container",
 
         // Header with summary stats
-        div {
-            class: "results-header",
-            h1 {
-                class: "results-title",
-                "Assignment Results"
-            }
-            div {
-                class: "stats-grid",
-                div {
-                    class: "stat-card-assigned",
-                    h3 { class: "stat-number-green", "{assignments.assignments.len()}" }
-                    p { class: "stat-label-green", "People Assigned" }
-                }
-                div {
-                    class: "stat-card-unassigned",
-                    h3 { class: "stat-number-yellow", "{assignments.unassigned_people.len()}" }
-                    p { class: "stat-label-yellow", "Unassigned" }
-                }
-                div {
-                    class: "stat-card-unfilled",
-                    h3 { class: "stat-number-red", "{assignments.unfilled_positions.len()}" }
-                    p { class: "stat-label-red", "Unfilled Positions" }
-                }
-            }
+        AssignmentStats {
+            assignments_signal: assignments.read().clone().unwrap(),
         }
         div {
             class: "sticky top-17 z-50 bg-white shadow-md border-b border-gray-200 flex gap-2 p-4 w-175",
@@ -292,331 +328,27 @@ pub fn Results() -> Element {
             }
             div {
                 class: "teams-grid",
-                for (team, team_assignments) in teams_with_assignments {
-                    div {
-                        class: "team-card",
-                        h3 {
-                            class: "team-header",
-                            span { class: "team-icon", "👥" }
-                            "{team.name} ({team_assignments.len()} assigned)"
-                        }
-
-                        div {
-                            class: "table-wrapper",
-                            table {
-                                class: "results-table",
-                                thead {
-                                    class: "table-header",
-                                    tr {
-                                        th { class: "table-header-cell", "" }
-                                        th { class: "table-header-cell", "Role" }
-                                        th { class: "table-header-cell", "Name" }
-                                        th { class: "table-header-cell", "Rate/Rank" }
-                                        th { class: "table-header-cell", "Status" }
-                                        th { class: "table-header-cell", "PRD" }
-                                    }
-                                }
-                                tbody {
-                                    for assignment in team_assignments {
-                                        {
-                                        let person = assignment.person.clone();
-                                        let team_name = assignment.team_name.clone();
-                                        let position = assignment.position.clone();
-
-                                        // Create separate clones for each closure to avoid ownership conflicts
-                                        let person_hover = person.clone();
-                                        let team_name_hover = team_name.clone();
-                                        let qualification_hover = position.qualification.clone();
-
-                                        rsx! { tr {
-                                            class: {if is_assignment_selected(
-                                                &selected_assignments(),
-                                                &person.name,
-                                                &team_name,
-                                                &position,
-                                            ) {
-                                                "table-row bg-yellow-50 border-l-4 border-l-yellow-400"
-                                            } else if is_swap_eligible(
-                                                interaction_mode(),
-                                                &selected_assignments(),
-                                                &person.name,
-                                                Some(team_name.as_str()),
-                                                Some(&position),
-                                                people,
-                                            ) {
-                                                "table-row bg-emerald-100 border-l-4 border-l-emerald-400"
-                                            } else {
-                                                "table-row"
-                                            }},
-                                            td {
-                                                class: "table-cell-muted",
-                                                    input {
-                                                        r#type: "checkbox",
-                                                        style: if interaction_mode() == InteractionMode::ViewOnly {
-                                                            "visibility: hidden;"
-                                                        } else {
-                                                            "visibility: visible;"
-                                                        },
-                                                        checked: is_assignment_selected(
-                                                            &selected_assignments(),
-                                                            &person.name,
-                                                            &team_name,
-                                                            &position,
-                                                        ),
-                                                        disabled: {
-                                                            let current_selected = selected_assignments();
-                                                            let is_currently_selected = is_assignment_selected(
-                                                                &current_selected,
-                                                                &person.name,
-                                                                &team_name,
-                                                                &position,
-                                                            );
-                                                            is_checkbox_disabled(interaction_mode(), current_selected.len(), is_currently_selected)
-                                                        },
-                                                        onchange: move |evt| {
-                                                            let assignment_id = (
-                                                                person.name.clone(),
-                                                                Some(team_name.clone()),
-                                                                Some(position.clone()),
-                                                            );
-                                                            let new_selections = toggle_assignment_selection(
-                                                                assignment_id,
-                                                                evt.checked(),
-                                                                selected_assignments(),
-                                                                interaction_mode(),
-                                                            );
-                                                            selected_assignments.set(new_selections);
-                                                        }
-                                                    }
-                                            }
-                                            td {
-                                                class: "table-cell",
-                                                span {
-                                                    class: if assignment.manual_override {
-                                                        "role-badge role-badge--locked"
-                                                    } else {
-                                                        "role-badge"
-                                                    },
-                                                    "{position.qualification}"
-                                                }
-                                            }
-                                            td {
-                                                class: "table-cell-name",
-                                                onmouseenter: move |evt: Event<MouseData>| {
-                                                    let current_assignment = Some(format!("{} - {}", team_name_hover, qualification_hover));
-                                                    hovered_person.set(Some(((*person_hover).clone(), current_assignment)));
-
-                                                    let coords = evt.data().client_coordinates();
-                                                    mouse_position.set((coords.x, coords.y));
-                                                },
-                                                onmouseleave: move |_| {
-                                                    hovered_person.set(None);
-                                                },
-                                                "{person.name}"
-                                            }
-                                            td {
-                                                class: "table-cell-muted",
-                                                "{person.raterank}"
-                                            }
-                                            td {
-                                                class: "table-cell",
-                                                match person.duty_status {
-                                                    DutyStatus::TAR => rsx! {
-                                                        span {
-                                                            class: "status-badge-tar",
-                                                            "TAR"
-                                                        }
-                                                    },
-                                                    DutyStatus::SELRES => rsx! {
-                                                        span {
-                                                            class: "status-badge-selres",
-                                                            "SELRES"
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                            td {
-                                                class: "table-cell-muted",
-                                                if let Some(prd) = person.prd {
-                                                    span {
-                                                        class: get_prd_css_class(prd, today),
-                                                        "{prd}"
-                                                    }
-                                                } else {
-                                                    "-"
-                                                }
-                                            }
-                                        }} // Close tr and rsx!
-                                    } // Close Rust block
-                                } // Close for assignment loop
-
-                                // rows for missing quals
-                                for missing in assignments.unfilled_positions.iter()
-                                    .filter(|(team_name,_)| team_name == &team.name) {
-                                    tr {
-                                        class: "table-row bg-red-50",
-                                        td {
-                                            ""
-                                        }
-                                        td {
-                                            class: "table-cell-name text-red-600",
-                                            span { class: "text-xl mr-2", "⚠️" }
-                                            //span { class: "font-semibold", "MISSING" }
-                                        }
-                                        td { class: "table-cell-muted text-red-400", "" }
-                                        td {
-                                            class: "table-cell",
-                                            span {
-                                                class: "role-badge bg-red-100 text-red-800",
-                                                "{missing.1}"
-                                            }
-                                        }
-                                        td { class: "table-cell-muted text-red-400", "" }
-                                        td { class: "table-cell-muted text-red-400", "" }
-                                    }
-                                }
-                            } // Close tbody
-                        } // Close table
-                    } // Close div (table-wrapper)
-                } // Close div (team-card)
-            } // Close for team loop
-        } // Close div (teams-grid)
-    } // Close div (section-card)
-
-        // Unassigned People
-        if !unassigned_people.is_empty() {
-            div {
-                class: "section-card",
-                h2 {
-                    class: "section-title-alert",
-                    "👤 Unassigned Personnel"
-                }
-                SearchBar {
-                    placeholder: "Search name or qual...",
-                    value: search_query(),
-                    onchange: move |value| search_query.set(value),
-                }
-                div {
-                    class: "table-wrapper",
-                    table {
-                        class: "results-table",
-                        thead {
-                            class: "table-header",
-                            tr {
-                                th { class: "table-header-cell", "" }
-                                th { class: "table-header-cell", "Name" }
-                                th { class: "table-header-cell", "Rate/Rank" }
-                                th { class: "table-header-cell", "Status" }
-                                th { class: "table-header-cell", "PRD" }
-                                th { class: "table-header-cell", "Eligible Roles" }
-                            }
-                        }
-                        tbody {
-                            for person in unassigned_people.iter().cloned()
-                                .filter(|p| {
-                                        let query = search_query().to_lowercase();
-                                        query.is_empty() ||
-                                        p.name.to_lowercase().contains(&query) ||
-                                        p.qualifications.iter().any(|q| q.to_lowercase().contains(&query))
-                                    }) {
-                                tr {
-                                    class: if is_swap_eligible(
-                                        interaction_mode(),
-                                        &selected_assignments(),
-                                        person.get_name(),
-                                        None,
-                                        None,
-                                        people,
-                                    ) {
-                                        "table-row bg-emerald-100 border-l-4 border-l-emerald-400"
-                                    } else {
-                                        "table-row"
-                                    },
-                                    td {
-                                        class: "table-cell-muted",
-                                        input {
-                                            r#type: "checkbox",
-                                            style: if interaction_mode() == InteractionMode::ViewOnly {
-                                                "visibility: hidden;"
-                                            } else {
-                                                "visibility: visible;"
-                                            },
-                                            checked: is_unassigned_selected(
-                                                  &selected_assignments(),
-                                                  &person.name,
-                                              ),
-                                            disabled: {
-                                                  let current_selected = selected_assignments();
-                                                  let is_currently_selected = is_unassigned_selected(
-                                                      &current_selected,
-                                                      &person.name,
-                                                  );
-                                                  is_checkbox_disabled(interaction_mode(), current_selected.len(), is_currently_selected)
-                                              },
-                                            onchange: move |evt| {
-                                                  let assignment_id = (person.name.clone(), None, None);
-                                                  let new_selections = toggle_assignment_selection(
-                                                      assignment_id,
-                                                      evt.checked(),
-                                                      selected_assignments(),
-                                                      interaction_mode(),
-                                                  );
-                                                  selected_assignments.set(new_selections);
-                                          }
-                                        }
-                                    }
-                                    td {
-                                        class: "table-cell-name",
-                                        "{person.name}"
-                                    }
-                                    td {
-                                        class: "table-cell-muted",
-                                        "{person.raterank}"
-                                    }
-                                    td {
-                                        class: "table-cell",
-                                        match person.duty_status {
-                                            DutyStatus::TAR => rsx! {
-                                                span {
-                                                    class: "status-badge-tar",
-                                                    "TAR"
-                                                }
-                                            },
-                                           DutyStatus::SELRES => rsx! {
-                                                span {
-                                                    class: "status-badge-selres",
-                                                    "SELRES"
-                                                }
-                                            },
-                                        }
-
-                                    }
-                                    td {
-                                        class: "table-cell",
-                                        match person.get_prd() {
-                                            Some(date) => rsx! {
-                                                span {
-                                                    class: "table-cell-muted",
-                                                    "{date}",
-                                                }
-                                            },
-                                            None => rsx! {
-                                                span {
-                                                    class: "table-cell-muted",
-                                                    "-",
-                                                }
-                                            }
-                                        }
-                                    }
-                                    td {
-                                        class: "table-cell-small",
-                                        "{person.qualifications.iter().sorted().join(\", \")}"
-                                    }
-                                }
-                            }
-                        }
+                for team in teams_sorted() {
+                    TeamCard {
+                        team: team.clone(),
+                        assignments_signal: assignments.read().clone().unwrap(),
+                        analysis_date_signal: selected_date,
+                        on_selection_change: on_selection_change,
+                        on_person_hover: on_person_hover,
+                        on_person_leave: on_person_leave,
                     }
                 }
+            }
+        }
+
+        // Unassigned Personnel
+        if !unassigned_people().is_empty() {
+            UnassignedTable {
+                assignments_signal: assignments.read().clone().unwrap(),
+                analysis_date_signal: selected_date,
+                on_selection_change: on_selection_change,
+                on_person_hover: on_person_hover,
+                on_person_leave: on_person_leave,
             }
         }
 
@@ -631,48 +363,12 @@ pub fn Results() -> Element {
     } // Close rsx! block
 }
 
-fn get_prd_css_class(prd: chrono::NaiveDate, today: chrono::NaiveDate) -> &'static str {
-    let months_remaining =
-        (prd.year() - today.year()) * 12 + (prd.month() as i32 - today.month() as i32);
-
-    if months_remaining >= 12 {
-        "text-gray-600"
-    } else if months_remaining >= 6 {
-        "text-yellow-600 font-semibold"
-    } else {
-        "text-orange-600 font-bold"
-    }
-}
-
 fn should_add_selection(interaction_mode: InteractionMode, current_count: usize) -> bool {
     match interaction_mode {
         InteractionMode::Swap => current_count < 2,
         InteractionMode::Lock => true,
         InteractionMode::ViewOnly => false,
     }
-}
-
-fn is_checkbox_disabled(
-    interaction_mode: InteractionMode,
-    current_count: usize,
-    is_currently_selected: bool,
-) -> bool {
-    match interaction_mode {
-        InteractionMode::Swap => current_count >= 2 && !is_currently_selected,
-        InteractionMode::Lock => false,
-        InteractionMode::ViewOnly => true,
-    }
-}
-
-fn is_assignment_selected(
-    selections: &[(String, Option<String>, Option<Position>)],
-    person_name: &str,
-    team_name: &str,
-    position: &Position,
-) -> bool {
-    selections.iter().any(|(name, team, pos)| {
-        name == person_name && team.as_deref() == Some(team_name) && pos.as_ref() == Some(position)
-    })
 }
 
 fn toggle_assignment_selection(
@@ -693,85 +389,4 @@ fn toggle_assignment_selection(
             .filter(|item| item != &assignment_id)
             .collect()
     }
-}
-
-fn is_unassigned_selected(
-    selections: &[(String, Option<String>, Option<Position>)],
-    person_name: &str,
-) -> bool {
-    selections
-        .iter()
-        .any(|(name, team, pos)| name == person_name && team.is_none() && pos.is_none())
-}
-
-fn is_swap_eligible(
-    interaction_mode: InteractionMode,
-    current_selections: &[(String, Option<String>, Option<Position>)],
-    assignment_person: &str,
-    assignment_team: Option<&str>,
-    assignment_position: Option<&Position>,
-    people: &[Person],
-) -> bool {
-    // Only relevant in swap mode
-    if interaction_mode != InteractionMode::Swap {
-        return false;
-    }
-
-    // Need exactly 1 person selected to show eligibility
-    if current_selections.len() != 1 {
-        return false;
-    }
-
-    // Don't highlight the currently selected person
-    let is_currently_selected = match (assignment_team, assignment_position) {
-        (Some(team), Some(pos)) => {
-            is_assignment_selected(current_selections, assignment_person, team, pos)
-        }
-        _ => {
-            // For unassigned people, check if they're selected as unassigned
-            current_selections.iter().any(|(name, team, pos)| {
-                name == assignment_person && team.is_none() && pos.is_none()
-            })
-        }
-    };
-
-    if is_currently_selected {
-        return false;
-    }
-
-    // Get the selected person and their position
-    let (selected_person_name, _selected_team, selected_position) = &current_selections[0];
-    let Some(selected_position) = selected_position else {
-        return false;
-    };
-
-    // Find both people in the people list
-    let Some(selected_person) = people.iter().find(|p| &p.name == selected_person_name) else {
-        return false;
-    };
-    let Some(target_person) = people.iter().find(|p| p.name == assignment_person) else {
-        return false;
-    };
-
-    if assignment_position.is_none() {
-        // This is an unassigned person - only check if they can do the selected job
-        return target_person
-            .qualifications
-            .contains(&selected_position.qualification);
-    }
-
-    // For assigned people, check mutual qualification
-    let assignment_position = assignment_position.unwrap(); // Safe because we checked is_none() above
-
-    // Check mutual qualification:
-    // 1. Can selected person do target's job?
-    let can_selected_do_target = selected_person
-        .qualifications
-        .contains(&assignment_position.qualification);
-    // 2. Can target person do selected's job?
-    let can_target_do_selected = target_person
-        .qualifications
-        .contains(&selected_position.qualification);
-
-    can_selected_do_target && can_target_do_selected
 }

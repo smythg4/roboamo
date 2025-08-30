@@ -17,7 +17,7 @@ pub use file_upload::FileUpload;
 mod navbar;
 pub use navbar::Navbar;
 
-mod results;
+pub mod results;
 pub use results::Results;
 
 mod roadmap;
