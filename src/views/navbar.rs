@@ -4,12 +4,17 @@ use dioxus::prelude::*;
 use crate::components::ProgressBar;
 use crate::utilities::config::PAGES;
 use crate::utilities::AppState;
+use std::rc::Rc;
+
+#[cfg(target_arch = "wasm32")]
+use {wasm_bindgen::JsCast, web_sys};
 
 #[component]
 pub fn Navbar() -> Element {
     let state = use_context::<Signal<AppState>>();
     let (n, _) = state().upload_progress();
     let all_complete = state().all_files_uploaded();
+    let all_empty = state().is_empty();
     let mut show_mobile_menu = use_signal(|| false);
 
     rsx! {
@@ -170,6 +175,130 @@ pub fn Navbar() -> Element {
                                     span {
                                         class: "xl:hidden",
                                         "See Results"
+                                    }
+                                }
+                            }
+
+                            // Hidden file input for loading save states
+                            input {
+                                r#type: "file",
+                                accept: ".json",
+                                style: "display: none;",
+                                id: "load-state-input",
+                                onchange: move |_evt| {
+                                    #[cfg(target_arch = "wasm32")]
+                                    {
+                                        let mut state_clone = state.clone();
+                                        let navigator = navigator();
+                                        spawn(async move {
+                                            #[cfg(target_arch = "wasm32")]
+                                            web_sys::console::log_1(&wasm_bindgen::JsValue::from_str("Starting file load..."));
+                                            
+                                            match _evt.files() {
+                                                Some(file_engine) => {
+                                                    let files = file_engine.files();
+                                                    if let Some(fname) = files.first() {
+                                                        match file_engine.read_file(fname).await {
+                                                            Some(file_data) => {
+                                                                match String::from_utf8(file_data) {
+                                                                    Ok(json_content) => {
+                                                                        // Parse and validate save state
+                                                                        #[cfg(target_arch = "wasm32")]
+                                                                        web_sys::console::log_1(&wasm_bindgen::JsValue::from_str("File read successfully, parsing JSON..."));
+                                                                        
+                                                                        match crate::utilities::import::import_save_state(&json_content) {
+                                                                            Ok(save_state) => {
+                                                                                // Update the application state by populating the parsed_data
+                                                                                let mut current_state = state_clone();
+                                                                                
+                                                                                // Clear all previous file data
+                                                                                for config in current_state.files.values_mut() {
+                                                                                    config.file_content = None;
+                                                                                    config.file_name = None;
+                                                                                    config.parsed_data = None;
+                                                                                }
+                                                                                
+                                                                                // Populate with save state data
+                                                                                if let Some(requirements_config) = current_state.files.get_mut("Requirements") {
+                                                                                    requirements_config.parsed_data = Some(crate::utilities::config::ParsedData::Requirements(Rc::new(save_state.teams.clone())));
+                                                                                }
+                                                                                
+                                                                                if let Some(asm_config) = current_state.files.get_mut("ASM") {
+                                                                                    asm_config.parsed_data = Some(crate::utilities::config::ParsedData::Personnel(Rc::new(save_state.people.clone())));
+                                                                                }
+                                                                                
+                                                                                if let Some(qual_defs_config) = current_state.files.get_mut("Qual Defs") {
+                                                                                    qual_defs_config.parsed_data = Some(crate::utilities::config::ParsedData::QualDefs(Rc::new(save_state.qual_defs.clone())));
+                                                                                }
+                                                                                
+                                                                                // We don't populate FLTMPS since PRD data is already in Person objects
+                                                                                
+                                                                                // Restore persistent locks
+                                                                                current_state.persistent_locks = save_state.locks_to_hashmap();
+                                                                                
+                                                                                state_clone.set(current_state);
+                                                                                
+                                                                                #[cfg(target_arch = "wasm32")]
+                                                                                web_sys::console::log_1(&wasm_bindgen::JsValue::from_str("State updated successfully, navigating to results..."));
+                                                                                
+                                                                                // Navigate to results page after successful load
+                                                                                navigator.push(Route::Results {});
+                                                                            }
+                                                                            Err(e) => {
+                                                                                #[cfg(target_arch = "wasm32")]
+                                                                                web_sys::console::error_1(&wasm_bindgen::JsValue::from_str(&format!("Failed to parse save state: {}", e)));
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                    Err(e) => {
+                                                                        #[cfg(target_arch = "wasm32")]
+                                                                        web_sys::console::error_1(&wasm_bindgen::JsValue::from_str(&format!("File contains invalid UTF-8 data: {}", e)));
+                                                                    }
+                                                                }
+                                                            }
+                                                            None => {
+                                                                #[cfg(target_arch = "wasm32")]
+                                                                web_sys::console::error_1(&wasm_bindgen::JsValue::from_str(&format!("Failed to read file {}", fname)));
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                None => {
+                                                    #[cfg(target_arch = "wasm32")]
+                                                    web_sys::console::error_1(&wasm_bindgen::JsValue::from_str("No file engine available"));
+                                                }
+                                            }
+                                        });
+                                    }
+                                },
+                            }
+
+                            // Load State button - only visible if state has been reset
+                            if all_empty {
+                                button {
+                                    class: "ml-2 flex items-center px-3 py-1.5 bg-gradient-to-r from-blue-700 to-blue-400 text-white rounded-lg font-semibold shadow hover:shadow-lg hover:from-blue-600 hover:to-blue-300 transform hover:-translate-y-0.5 transition-all duration-200 text-sm",
+                                    onclick: move |_| {
+                                        #[cfg(target_arch = "wasm32")]
+                                        {
+                                            if let Some(window) = web_sys::window() {
+                                                if let Some(document) = window.document() {
+                                                    if let Some(input) = document.get_element_by_id("load-state-input") {
+                                                        match input.dyn_into::<web_sys::HtmlInputElement>() {
+                                                            Ok(input) => input.click(),
+                                                            Err(_) => {}
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    span {
+                                        class: "hidden xl:inline",
+                                        "📂 Load State"
+                                    }
+                                    span {
+                                        class: "xl:hidden",
+                                        "📂 Load"
                                     }
                                 }
                             }

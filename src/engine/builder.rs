@@ -231,6 +231,46 @@ pub fn generate_assignments(
     })
 }
 
+/// Generate assignments using pre-processed people and teams data (for loading from save states)
+pub fn generate_assignments_from_processed_data(
+    analysis_date: chrono::NaiveDate,
+    assignment_locks: Option<Vec<AssignmentLock>>,
+    people: Vec<Person>,
+    teams: Vec<Team>,
+) -> Result<AssignmentResult> {
+    // Filter people by PRD date (same logic as build_people)
+    let mut filtered_people = people;
+    filtered_people.retain(|person| match person.prd {
+        Some(prd_date) => prd_date > analysis_date,
+        None => true,
+    });
+    
+    let people = Rc::new(filtered_people);
+    let teams = Rc::new(teams);
+    let mut solver =
+        AssignmentSolver::new(&people, &teams, analysis_date, assignment_locks.clone());
+    let (_flow_count, _flow_cost) = solver.solve();
+    let mut flow_assignments = solver.extract_assignments();
+    if let Some(locks) = assignment_locks {
+        for lock in locks {
+            if let (Some(team_name), Some(position)) = (lock.team_name, lock.position) {
+                flow_assignments.push(FlowAssignment {
+                    person_name: lock.person_name,
+                    team: team_name,
+                    position,
+                    manual_override: true,
+                });
+            }
+        }
+    }
+
+    Ok(AssignmentResult {
+        flow_assignments,
+        people,
+        teams,
+    })
+}
+
 pub fn build_assignment_plan(
     people: &[Person],
     teams: &[Team],

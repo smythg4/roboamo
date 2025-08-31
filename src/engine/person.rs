@@ -1,8 +1,9 @@
 use chrono::NaiveDate;
+use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Person {
     // you can privatize this later
     pub name: String,
@@ -45,7 +46,7 @@ impl Display for Person {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum DutyStatus {
     Tar,
     Selres,

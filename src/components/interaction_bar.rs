@@ -13,6 +13,7 @@ pub enum InteractionAction {
     ExecuteSwap,
     ExecuteLock,
     ClearLocks,
+    SaveState,
 }
 
 #[component]
@@ -89,6 +90,15 @@ pub fn InteractionBar(
                     on_action.call(InteractionAction::ClearLocks);
                 },
                 "Clear All Locks ({persistent_locks_count})"
+            }
+
+            // button to save current state
+            button {
+                class: "px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700",
+                onclick: move |_| {
+                    on_action.call(InteractionAction::SaveState);
+                },
+                "💾 Save State"
             }
         }
     }

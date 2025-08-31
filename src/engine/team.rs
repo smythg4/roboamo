@@ -1,12 +1,13 @@
 use crate::engine::assignment::RoleId;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Team {
     pub name: String,
     pub required_positions: Vec<Position>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
 pub struct Position {
     pub qualification: String,
     pub instance: u32,

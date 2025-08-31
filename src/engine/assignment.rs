@@ -3,6 +3,7 @@ use std::collections::{HashMap, HashSet};
 use crate::engine::flow_graph::FlowGraph;
 use crate::engine::person::{DutyStatus, Person};
 use crate::engine::team::{Position, Team};
+use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 
 use std::rc::Rc;
@@ -330,7 +331,7 @@ pub struct AssignmentPlan {
     pub unassigned_people: Rc<Vec<Person>>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AssignmentLock {
     pub person_name: String,
     pub team_name: Option<String>,

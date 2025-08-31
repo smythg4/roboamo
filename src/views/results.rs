@@ -5,11 +5,13 @@ use std::rc::Rc;
 // External crate imports
 use dioxus::prelude::*;
 use itertools::Itertools;
+#[cfg(target_arch = "wasm32")]
+use {wasm_bindgen, web_sys};
 
 // Local crate imports - engine
 use crate::engine::{
     assignment::{AssignmentLock, FlowAssignment},
-    builder::{build_assignment_plan, generate_assignments, AssignmentResult},
+    builder::{build_assignment_plan, generate_assignments, generate_assignments_from_processed_data, AssignmentResult},
     person::Person,
     team::{Position, Team},
 };
@@ -23,7 +25,7 @@ pub type AssignmentSelection = Vec<(String, Option<String>, Option<Position>)>;
 // Local crate imports - other
 use crate::{
     components::{AnalysisDateBar, AssignmentStats, InteractionAction, InteractionBar, InteractionMode, PlayerCard, TeamCard, UnassignedTable},
-    utilities::AppState,
+    utilities::{AppState, SaveState},
 };
 
 // Context for shared assignment UI state
@@ -40,10 +42,9 @@ pub fn Results() -> Element {
     let mut hovered_person = use_signal(|| None::<(Person, Option<String>)>); // (person, current assignment)
     let mut mouse_position = use_signal(|| (0.0, 0.0));
     let selected_date = use_signal(|| chrono::Utc::now().date_naive());
-    let mut persistent_locks = use_signal(HashMap::<(String, Position), String>::new);
 
     // Subscribe to app state changes
-    let app_state = use_context::<Signal<AppState>>();
+    let mut app_state = use_context::<Signal<AppState>>();
 
     // Raw data storage
     let mut raw_data = use_signal(|| None::<(Vec<FlowAssignment>, Rc<Vec<Person>>, Rc<Vec<Team>>)>);
@@ -54,9 +55,12 @@ pub fn Results() -> Element {
         use_signal(Vec::<(String, Option<String>, Option<Position>)>::new);
     use_effect(move || {
         // Read app state to trigger recomputation on changes
-        let _ = app_state();
+        let app_state_val = app_state();
         let _ = selected_date();
-        let current_persistent_locks = persistent_locks();
+        let current_persistent_locks = app_state_val.persistent_locks.clone();
+        
+        #[cfg(target_arch = "wasm32")]
+        web_sys::console::log_1(&wasm_bindgen::JsValue::from_str("Results useEffect triggered - checking for data changes..."));
 
         let all_locks = if !current_persistent_locks.is_empty() {
             let assignment_locks = current_persistent_locks
@@ -73,15 +77,54 @@ pub fn Results() -> Element {
         };
 
         // Generate fresh assignments
-        let data = match generate_assignments(selected_date(), all_locks, &app_state.read()) {
-            Ok(AssignmentResult {
-                flow_assignments,
-                people,
-                teams,
-            }) => Some((flow_assignments, people, teams)),
-            Err(e) => {
-                eprintln!("Error generating assignments: {:?}", e);
-                None
+        let app_state_read = &app_state_val;
+        
+        // Check if we have data loaded from save state vs file uploads
+        let has_fltmps = app_state_read.files.get("FLTMPS")
+            .and_then(|config| config.parsed_data.as_ref())
+            .is_some();
+        let has_requirements = app_state_read.files.get("Requirements")
+            .and_then(|config| config.parsed_data.as_ref())
+            .is_some();
+        let has_asm = app_state_read.files.get("ASM")
+            .and_then(|config| config.parsed_data.as_ref())
+            .is_some();
+        
+        let data = if has_requirements && has_asm && !has_fltmps {
+            // This looks like save state data - use processed data directly
+            let teams = app_state_read.files.get("Requirements")
+                .and_then(|config| config.parsed_data.as_ref())
+                .and_then(|data| match data {
+                    crate::utilities::config::ParsedData::Requirements(teams) => Some(teams.as_ref().clone()),
+                    _ => None,
+                });
+            let people = app_state_read.files.get("ASM")
+                .and_then(|config| config.parsed_data.as_ref())
+                .and_then(|data| match data {
+                    crate::utilities::config::ParsedData::Personnel(people) => Some(people.as_ref().clone()),
+                    _ => None,
+                });
+                
+            match (people, teams) {
+                (Some(people), Some(teams)) => {
+                    match generate_assignments_from_processed_data(selected_date(), all_locks, people, teams) {
+                        Ok(AssignmentResult { flow_assignments, people, teams }) => Some((flow_assignments, people, teams)),
+                        Err(e) => {
+                            eprintln!("Error generating assignments from processed data: {:?}", e);
+                            None
+                        }
+                    }
+                }
+                _ => None,
+            }
+        } else {
+            // Use normal file upload flow
+            match generate_assignments(selected_date(), all_locks, &app_state_read) {
+                Ok(AssignmentResult { flow_assignments, people, teams }) => Some((flow_assignments, people, teams)),
+                Err(e) => {
+                    eprintln!("Error generating assignments: {:?}", e);
+                    None
+                }
             }
         };
 
@@ -208,17 +251,67 @@ pub fn Results() -> Element {
                 selected_assignments.set(vec![]);
             }
             InteractionAction::ExecuteSwap => {
-                execute_swap_action(&selected_assignments(), &mut persistent_locks);
+                app_state.with_mut(|state| {
+                    execute_swap_action(&selected_assignments(), &mut state.persistent_locks);
+                });
                 selected_assignments.set(vec![]);
                 interaction_mode.set(InteractionMode::ViewOnly);
             }
             InteractionAction::ExecuteLock => {
-                execute_lock_action(&selected_assignments(), &mut persistent_locks);
+                app_state.with_mut(|state| {
+                    execute_lock_action(&selected_assignments(), &mut state.persistent_locks);
+                });
                 selected_assignments.set(vec![]);
                 interaction_mode.set(InteractionMode::ViewOnly);
             }
             InteractionAction::ClearLocks => {
-                persistent_locks.set(HashMap::new());
+                app_state.with_mut(|state| {
+                    state.persistent_locks.clear();
+                });
+            }
+            InteractionAction::SaveState => {
+                // Extract current data for export
+                let current_raw_data = raw_data.read();
+                if let Some((_, ref people, ref teams)) = *current_raw_data {
+                    // Extract qual_defs from app state
+                    let app_state_read = app_state.read();
+                    let qual_defs = app_state_read.files
+                        .get("Qual Defs")
+                        .and_then(|config| config.parsed_data.as_ref())
+                        .and_then(|data| match data {
+                            crate::utilities::config::ParsedData::QualDefs(quals) => Some(quals.as_ref()),
+                            _ => None,
+                        })
+                        .cloned()
+                        .unwrap_or_default();
+                    
+                    let save_state = SaveState::new(
+                        selected_date(),
+                        people,
+                        teams,
+                        &qual_defs,
+                        &app_state_read.persistent_locks,
+                    );
+                    
+                    // Trigger download with timestamp
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        let timestamp = save_state.export_timestamp.format("%Y%m%d_%H%M%S");
+                        let filename = format!("roboamo-save-state-{}.json", timestamp);
+                        if let Err(e) = save_state.download(&filename) {
+                            web_sys::console::error_1(&wasm_bindgen::JsValue::from_str(&format!("Failed to download save state: {}", e)));
+                        }
+                    }
+                    
+                    #[cfg(not(target_arch = "wasm32"))]
+                    {
+                        // For non-WASM platforms, just log the JSON
+                        match save_state.to_json() {
+                            Ok(json) => println!("Save State JSON: {}", json),
+                            Err(e) => eprintln!("Failed to export save state: {}", e),
+                        }
+                    }
+                }
             }
         }
     };
@@ -237,7 +330,7 @@ pub fn Results() -> Element {
         InteractionBar {
             interaction_mode_signal: interaction_mode,
             selected_count_signal: use_memo(move || selected_assignments().len()),
-            persistent_locks_count_signal: use_memo(move || persistent_locks().len()),
+            persistent_locks_count_signal: use_memo(move || app_state().persistent_locks.len()),
             on_action: on_interaction_action,
         }
         // Analysis date selector
@@ -292,34 +385,31 @@ pub fn Results() -> Element {
 // Helper functions for interaction actions
 fn execute_swap_action(
     selections: &[(String, Option<String>, Option<Position>)],
-    persistent_locks: &mut Signal<HashMap<(String, Position), String>>,
+    persistent_locks: &mut HashMap<(String, Position), String>,
 ) {
     if selections.len() == 2 {
         let (person1, team1, pos1) = &selections[0];
         let (person2, team2, pos2) = &selections[1];
         
-        persistent_locks.with_mut(|locks| {
-            if let (Some(team), Some(pos)) = (team2, pos2) {
-                locks.insert((team.clone(), pos.clone()), person1.clone());
-            }
-            if let (Some(team), Some(pos)) = (team1, pos1) {
-                locks.insert((team.clone(), pos.clone()), person2.clone());
-            }
-        });
+        if let (Some(team), Some(pos)) = (team2, pos2) {
+            persistent_locks.insert((team.clone(), pos.clone()), person1.clone());
+        };
+        if let (Some(team), Some(pos)) = (team1, pos1) {
+            persistent_locks.insert((team.clone(), pos.clone()), person2.clone());
+        };
+
     }
 }
 
 fn execute_lock_action(
     selections: &[(String, Option<String>, Option<Position>)],
-    persistent_locks: &mut Signal<HashMap<(String, Position), String>>,
+    persistent_locks: &mut HashMap<(String, Position), String>,
 ) {
-    persistent_locks.with_mut(|locks| {
-        for (person, team, pos) in selections {
-            if let (Some(team), Some(pos)) = (team, pos) {
-                locks.insert((team.clone(), pos.clone()), person.clone());
-            }
+    for (person, team, pos) in selections {
+        if let (Some(team), Some(pos)) = (team, pos) {
+            persistent_locks.insert((team.clone(), pos.clone()), person.clone());
         }
-    });
+    }
 }
 
 fn should_add_selection(interaction_mode: InteractionMode, current_count: usize) -> bool {

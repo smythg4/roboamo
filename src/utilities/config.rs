@@ -1,5 +1,5 @@
 use crate::engine::person::Person;
-use crate::engine::team::Team;
+use crate::engine::team::{Team, Position};
 use crate::utilities::parsing::{PRDList, QualTable};
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -67,6 +67,7 @@ impl FileUploadConfig {
 #[derive(Debug, Clone)]
 pub struct AppState {
     pub files: HashMap<String, FileUploadConfig>,
+    pub persistent_locks: HashMap<(String, Position), String>,
 }
 
 impl Default for AppState {
@@ -85,23 +86,53 @@ impl Default for AppState {
             };
             files.entry(page_name.to_string()).or_insert(file);
         }
-        AppState { files }
+        AppState { 
+            files,
+            persistent_locks: HashMap::new(),
+        }
     }
 }
 
 impl AppState {
+
+    pub fn is_empty(&self) -> bool {
+        self.files.iter().all(|file| file.1.parsed_data.is_none())
+    }
     pub fn all_files_uploaded(&self) -> bool {
+        // Check if this is a save state load scenario (has Requirements, ASM, Qual Defs but no FLTMPS)
+        let has_requirements = self.files.get("Requirements").map_or(false, |f| f.parsed_data.is_some());
+        let has_asm = self.files.get("ASM").map_or(false, |f| f.parsed_data.is_some());
+        let has_qual_defs = self.files.get("Qual Defs").map_or(false, |f| f.parsed_data.is_some());
+        let has_fltmps = self.files.get("FLTMPS").map_or(false, |f| f.parsed_data.is_some());
+        
+        // Save state scenario: Requirements + ASM + Qual Defs (FLTMPS data integrated into Person objects)
+        if has_requirements && has_asm && has_qual_defs && !has_fltmps {
+            return true;
+        }
+        
+        // Normal file upload scenario: all files required
         self.files.values().all(|f| f.parsed_data.is_some())
     }
 
     pub fn upload_progress(&self) -> (usize, usize) {
-        (
-            self.files
-                .values()
-                .filter(|f| f.parsed_data.is_some())
-                .count(),
-            PAGES.len(),
-        )
+        let current_count = self.files
+            .values()
+            .filter(|f| f.parsed_data.is_some())
+            .count();
+        
+        // Check if this is a save state scenario (3 files loaded, FLTMPS data integrated)
+        let has_requirements = self.files.get("Requirements").map_or(false, |f| f.parsed_data.is_some());
+        let has_asm = self.files.get("ASM").map_or(false, |f| f.parsed_data.is_some());
+        let has_qual_defs = self.files.get("Qual Defs").map_or(false, |f| f.parsed_data.is_some());
+        let has_fltmps = self.files.get("FLTMPS").map_or(false, |f| f.parsed_data.is_some());
+        
+        if has_requirements && has_asm && has_qual_defs && !has_fltmps {
+            // Save state scenario: show 4/4 even though only 3 files loaded
+            (4, PAGES.len())
+        } else {
+            // Normal scenario: show actual count
+            (current_count, PAGES.len())
+        }
     }
 
     pub fn clear_all_raw_data(&mut self) {

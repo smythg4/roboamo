@@ -60,7 +60,7 @@ pub fn ProductRoadmap() -> Element {
                                 icon: "💾",
                                 title: "Save State System",
                                 description: "Export/import complete analysis sessions as JSON for backup, collaboration, and audit trails",
-                                status: "in-progress"
+                                status: "complete"
                             }
                             FeatureCard {
                                 icon: "👤",
