@@ -1,24 +1,22 @@
 use chrono::NaiveDate;
 use dioxus::prelude::*;
 use itertools::Itertools;
-use std::rc::Rc;
 
-use crate::components::{InteractionMode, TeamRow};
+use crate::components::TeamRow;
 use crate::engine::{
-    assignment::{Assignment, AssignmentPlan},
-    person::Person,
-    team::{Position, Team},
+    assignment::AssignmentPlan,
+    team::Team,
 };
-use crate::views::results::AssignmentUIContext;
+use crate::views::results::{AssignmentUIContext, SelectionChangeHandler, PersonHoverHandler, PersonLeaveHandler};
 
 #[component]
 pub fn TeamCard(
     team: Team,
     assignments_signal: ReadOnlySignal<AssignmentPlan>,
     analysis_date_signal: Signal<NaiveDate>,
-    on_selection_change: EventHandler<((String, Option<String>, Option<Position>), bool)>,
-    on_person_hover: EventHandler<(Person, Option<String>, (f64, f64))>,
-    on_person_leave: EventHandler<()>,
+    on_selection_change: SelectionChangeHandler,
+    on_person_hover: PersonHoverHandler,
+    on_person_leave: PersonLeaveHandler,
 ) -> Element {
     // Note: Context available but not used in this component yet
     let _ui_context = use_context::<AssignmentUIContext>();

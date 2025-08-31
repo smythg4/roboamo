@@ -17,6 +17,9 @@ pub use search_bar::SearchBar;
 mod interaction_bar;
 pub use interaction_bar::{InteractionAction, InteractionBar, InteractionMode};
 
+mod analysis_date_bar;
+pub use analysis_date_bar::AnalysisDateBar;
+
 mod footer;
 pub use footer::Footer;
 

@@ -17,7 +17,7 @@ impl Position {
         format!("{}-{}-{:03}", team_name, self.qualification, self.instance)
     }
 
-    pub fn into_role_id(&self, team_name: &str) -> RoleId {
+    pub fn as_role_id(&self, team_name: &str) -> RoleId {
         RoleId {
             team: team_name.to_string(),
             qualification: self.qualification.clone(),

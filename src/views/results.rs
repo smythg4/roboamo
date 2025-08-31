@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 // External crate imports
-use chrono::prelude::*;
 use dioxus::prelude::*;
 use itertools::Itertools;
 
@@ -15,9 +14,15 @@ use crate::engine::{
     team::{Position, Team},
 };
 
+// Type aliases to reduce complexity in function signatures
+pub type SelectionChangeHandler = Callback<((String, Option<String>, Option<Position>), bool)>;
+pub type PersonHoverHandler = Callback<(Person, Option<String>, (f64, f64))>;
+pub type PersonLeaveHandler = Callback<()>;
+pub type AssignmentSelection = Vec<(String, Option<String>, Option<Position>)>;
+
 // Local crate imports - other
 use crate::{
-    components::{AssignmentStats, InteractionMode, PlayerCard, TeamCard, UnassignedTable},
+    components::{AnalysisDateBar, AssignmentStats, InteractionAction, InteractionBar, InteractionMode, PlayerCard, TeamCard, UnassignedTable},
     utilities::AppState,
 };
 
@@ -25,7 +30,7 @@ use crate::{
 #[derive(Clone)]
 pub struct AssignmentUIContext {
     pub interaction_mode: Signal<InteractionMode>,
-    pub selected_assignments: Signal<Vec<(String, Option<String>, Option<Position>)>>,
+    pub selected_assignments: Signal<AssignmentSelection>,
     pub people: ReadOnlySignal<Rc<Vec<Person>>>, // for eligibility calculations
 }
 
@@ -34,7 +39,7 @@ pub fn Results() -> Element {
     // Local UI state (not in context)
     let mut hovered_person = use_signal(|| None::<(Person, Option<String>)>); // (person, current assignment)
     let mut mouse_position = use_signal(|| (0.0, 0.0));
-    let mut selected_date = use_signal(|| chrono::Utc::now().date_naive());
+    let selected_date = use_signal(|| chrono::Utc::now().date_naive());
     let mut persistent_locks = use_signal(HashMap::<(String, Position), String>::new);
 
     // Subscribe to app state changes
@@ -90,10 +95,7 @@ pub fn Results() -> Element {
             return None;
         };
 
-        match build_assignment_plan(people, teams, flow_assignments) {
-            Ok(plan) => Some(plan),
-            Err(_e) => None, // TODO: better error handling
-        }
+        build_assignment_plan(people, teams, flow_assignments).ok() // TODO: better error handling
     });
 
     // Create the people signal for context
@@ -174,7 +176,7 @@ pub fn Results() -> Element {
     });
 
     // Event handlers - these will be passed as props, not in context
-    let on_selection_change = move |((person_name, team, position), is_checked): (
+    let on_selection_change = Callback::new(move |((person_name, team, position), is_checked): (
         (String, Option<String>, Option<Position>),
         bool,
     )| {
@@ -186,16 +188,39 @@ pub fn Results() -> Element {
             interaction_mode(),
         );
         selected_assignments.set(new_selections);
-    };
+    });
 
-    let on_person_hover =
+    let on_person_hover = Callback::new(
         move |(person, assignment, coords): (Person, Option<String>, (f64, f64))| {
             hovered_person.set(Some((person, assignment)));
             mouse_position.set(coords);
-        };
+        });
 
-    let on_person_leave = move |_| {
+    let on_person_leave = Callback::new(move |_| {
         hovered_person.set(None);
+    });
+
+    // Handle InteractionBar actions
+    let on_interaction_action = move |action: InteractionAction| {
+        match action {
+            InteractionAction::SetMode(mode) => {
+                interaction_mode.set(mode);
+                selected_assignments.set(vec![]);
+            }
+            InteractionAction::ExecuteSwap => {
+                execute_swap_action(&selected_assignments(), &mut persistent_locks);
+                selected_assignments.set(vec![]);
+                interaction_mode.set(InteractionMode::ViewOnly);
+            }
+            InteractionAction::ExecuteLock => {
+                execute_lock_action(&selected_assignments(), &mut persistent_locks);
+                selected_assignments.set(vec![]);
+                interaction_mode.set(InteractionMode::ViewOnly);
+            }
+            InteractionAction::ClearLocks => {
+                persistent_locks.set(HashMap::new());
+            }
+        }
     };
 
     use_context_provider(|| ui_context);
@@ -208,115 +233,16 @@ pub fn Results() -> Element {
         AssignmentStats {
             assignments_signal: assignments.read().clone().unwrap(),
         }
-        div {
-            class: "sticky top-17 z-50 bg-white shadow-md border-b border-gray-200 flex gap-2 p-4 w-175",
-            button {
-                class: match interaction_mode() {
-                    InteractionMode::ViewOnly => "px-4 py-2 bg-gray-600 text-white rounded-lg font-medium",
-                    _ => "px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
-                },
-                onclick: move |_| {
-                    interaction_mode.set(InteractionMode::ViewOnly);
-                    selected_assignments.set(vec![]);
-                },
-                "👁️ View Only"
-            }
-            // Swap Mode - button changes when selections are ready
-            button {
-                class: match (interaction_mode(), selected_assignments().len()) {
-                    (InteractionMode::Swap, 2) => "px-4 py-2 bg-blue-600 text-white rounded-lg font-medium animate-pulse",
-                    (InteractionMode::Swap, _) => "px-4 py-2 bg-blue-500 text-white rounded-lg font-medium",
-                    _ => "px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300",
-                },
-                onclick: move |_| {
-                    if interaction_mode() == InteractionMode::Swap && selected_assignments().len() == 2 {
-                        // Execute swap
-                        let selections = selected_assignments();
-                        let (person1, team1, pos1) = &selections[0];
-                        let (person2, team2, pos2) = &selections[1];
-
-                        persistent_locks.with_mut(|locks| {
-                            if let (Some(team), Some(pos)) = (team2, pos2) {
-                                locks.insert((team.clone(), pos.clone()), person1.clone());
-                            }
-                            if let (Some(team), Some(pos)) = (team1, pos1) {
-                                locks.insert((team.clone(), pos.clone()), person2.clone());
-                            }
-                        });
-                        selected_assignments.set(vec![]);
-                        interaction_mode.set(InteractionMode::ViewOnly);
-                    } else {
-                        interaction_mode.set(InteractionMode::Swap);
-                        selected_assignments.set(vec![]);
-                    }
-                },
-                match (interaction_mode(), selected_assignments().len()) {
-                    (InteractionMode::Swap, 2) => "🔄 Execute Swap",
-                    (InteractionMode::Swap, 1) => "🔄 Select One More",
-                    (InteractionMode::Swap, _) => "🔄 Swap Mode",
-                    _ => "🔄 Swap Mode"
-                }
-            }
-
-            // Lock Mode - button changes when selections exist
-            button {
-                class: match (interaction_mode(), selected_assignments().len()) {
-                    (InteractionMode::Lock, n) if n > 0 => "px-4 py-2 bg-orange-600 text-white rounded-lg font-medium animate-pulse",
-                    (InteractionMode::Lock, _) => "px-4 py-2 bg-orange-500 text-white rounded-lg font-medium",
-                    _ => "px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
-                },
-                onclick: move |_| {
-                    if interaction_mode() == InteractionMode::Lock && !selected_assignments().is_empty() {
-                        // Execute locks
-                        let selections = selected_assignments();
-                        persistent_locks.with_mut(|locks| {
-                            for (person, team, pos) in selections {
-                                if let (Some(team), Some(pos)) = (team, pos) {
-                                    locks.insert((team, pos), person);
-                                }
-                            }
-                        });
-                        selected_assignments.set(vec![]);
-                        interaction_mode.set(InteractionMode::ViewOnly);
-                    } else {
-                        interaction_mode.set(InteractionMode::Lock);
-                        selected_assignments.set(vec![]);
-                    }
-                },
-                match (interaction_mode(), selected_assignments().len()) {
-                    (InteractionMode::Lock, n) if n > 0 => format!("🔒 Lock {} Assignments", n),
-                    (InteractionMode::Lock, _) => "🔒 Lock Mode".to_string(),
-                    _ => "🔒 Lock Mode".to_string()
-                }
-            }
-
-            // button to clear all locked selections
-            button {
-                class: "px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600",
-                onclick: move |_| {
-                    persistent_locks.set(HashMap::new());
-                },
-                "Clear All Locks ({persistent_locks().len()})"
-            }
+        // Interaction toolbar
+        InteractionBar {
+            interaction_mode_signal: interaction_mode,
+            selected_count_signal: use_memo(move || selected_assignments().len()),
+            persistent_locks_count_signal: use_memo(move || persistent_locks().len()),
+            on_action: on_interaction_action,
         }
-        div {
-            class: "sticky top-40 z-50 bg-white shadow-md border-b border-gray-200 flex items-center gap-2 p-4 w-175",
-            label {
-                class: "text-sm font-medium text-gray-700",
-                span { "📅 " }
-                "Analysis Date:"
-            }
-            input {
-                r#type: "date",
-                class: "border border-gray-300 rounded px-3 py-1",
-                value: "{selected_date().format(\"%Y-%m-%d\")}",
-                onchange: move |evt| {
-                    if let Ok(new_date) = chrono::NaiveDate::parse_from_str(&evt.value(), "%Y-%m-%d") {
-                        selected_date.set(new_date);
-                    }
-                }
-            }
-
+        // Analysis date selector
+        AnalysisDateBar {
+            selected_date_signal: selected_date,
         }
 
         // Assignments by Team
@@ -361,6 +287,39 @@ pub fn Results() -> Element {
         }
     } // Close main div
     } // Close rsx! block
+}
+
+// Helper functions for interaction actions
+fn execute_swap_action(
+    selections: &[(String, Option<String>, Option<Position>)],
+    persistent_locks: &mut Signal<HashMap<(String, Position), String>>,
+) {
+    if selections.len() == 2 {
+        let (person1, team1, pos1) = &selections[0];
+        let (person2, team2, pos2) = &selections[1];
+        
+        persistent_locks.with_mut(|locks| {
+            if let (Some(team), Some(pos)) = (team2, pos2) {
+                locks.insert((team.clone(), pos.clone()), person1.clone());
+            }
+            if let (Some(team), Some(pos)) = (team1, pos1) {
+                locks.insert((team.clone(), pos.clone()), person2.clone());
+            }
+        });
+    }
+}
+
+fn execute_lock_action(
+    selections: &[(String, Option<String>, Option<Position>)],
+    persistent_locks: &mut Signal<HashMap<(String, Position), String>>,
+) {
+    persistent_locks.with_mut(|locks| {
+        for (person, team, pos) in selections {
+            if let (Some(team), Some(pos)) = (team, pos) {
+                locks.insert((team.clone(), pos.clone()), person.clone());
+            }
+        }
+    });
 }
 
 fn should_add_selection(interaction_mode: InteractionMode, current_count: usize) -> bool {

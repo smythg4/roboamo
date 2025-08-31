@@ -95,7 +95,7 @@ pub fn parse_asm_file(data: Rc<Vec<u8>>) -> Result<Vec<Person>> {
                 let person = people.entry(name.to_string()).or_insert(Person {
                     name: name.to_string(),
                     raterank: raterank.to_string(),
-                    duty_status: DutyStatus::SELRES, // this will be overridden later if needed
+                    duty_status: DutyStatus::Selres, // this will be overridden later if needed
                     qualifications: HashSet::new(),
                     prd: None,
                 });
@@ -134,10 +134,10 @@ pub fn enhance_personnel_with_prd(people: &mut Vec<Person>, prd_list: PRDList) -
     for person in people {
         if let Some(prd) = prd_lookup(&person.name, &prd_list) {
             person.prd = Some(prd);
-            person.duty_status = DutyStatus::TAR;
+            person.duty_status = DutyStatus::Tar;
         } else {
             person.prd = None;
-            person.duty_status = DutyStatus::SELRES;
+            person.duty_status = DutyStatus::Selres;
         }
     }
     Ok(())

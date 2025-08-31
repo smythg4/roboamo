@@ -29,9 +29,6 @@ impl Person {
     //     &self.raterank
     // }
 
-    pub fn get_prd(&self) -> &Option<NaiveDate> {
-        &self.prd
-    }
 }
 
 impl Display for Person {
@@ -50,15 +47,15 @@ impl Display for Person {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum DutyStatus {
-    TAR,
-    SELRES,
+    Tar,
+    Selres,
 }
 
 impl DutyStatus {
     pub fn as_str(&self) -> &'static str {
         match self {
-            DutyStatus::TAR => "TAR",
-            DutyStatus::SELRES => "SELRES",
+            DutyStatus::Tar => "TAR",
+            DutyStatus::Selres => "SELRES",
         }
     }
 }
@@ -72,8 +69,8 @@ impl Display for DutyStatus {
 impl From<&str> for DutyStatus {
     fn from(other: &str) -> Self {
         match other {
-            "TAR" => DutyStatus::TAR,
-            _ => DutyStatus::SELRES,
+            "TAR" => DutyStatus::Tar,
+            _ => DutyStatus::Selres,
         }
     }
 }

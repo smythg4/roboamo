@@ -18,8 +18,8 @@ pub enum InteractionAction {
 #[component]
 pub fn InteractionBar(
     interaction_mode_signal: Signal<InteractionMode>,
-    selected_count_signal: Signal<usize>,
-    persistent_locks_count_signal: Signal<usize>,
+    selected_count_signal: ReadOnlySignal<usize>,
+    persistent_locks_count_signal: ReadOnlySignal<usize>,
     on_action: EventHandler<InteractionAction>,
 ) -> Element {
     // Read current values from signals - component will auto-rerender when these change

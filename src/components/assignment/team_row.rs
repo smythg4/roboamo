@@ -2,7 +2,6 @@ use chrono::{Datelike, NaiveDate};
 use dioxus::html::MouseData;
 use dioxus::prelude::*;
 use itertools::Itertools;
-use std::rc::Rc;
 
 use crate::components::{InteractionMode, RoleBadge};
 use crate::engine::{
@@ -10,7 +9,7 @@ use crate::engine::{
     person::{DutyStatus, Person},
     team::{Position, Team},
 };
-use crate::views::results::AssignmentUIContext;
+use crate::views::results::{AssignmentUIContext, SelectionChangeHandler, PersonHoverHandler, PersonLeaveHandler};
 
 #[component]
 pub fn TeamRow(
@@ -18,9 +17,9 @@ pub fn TeamRow(
     person: Person,                 // Always present
     team: Option<Team>,             // None for unassigned people
     analysis_date: NaiveDate,
-    on_selection_change: EventHandler<((String, Option<String>, Option<Position>), bool)>,
-    on_person_hover: EventHandler<(Person, Option<String>, (f64, f64))>,
-    on_person_leave: EventHandler<()>,
+    on_selection_change: SelectionChangeHandler,
+    on_person_hover: PersonHoverHandler,
+    on_person_leave: PersonLeaveHandler,
 ) -> Element {
     // Get context for shared UI state
     let ui_context = use_context::<AssignmentUIContext>();
@@ -172,13 +171,13 @@ pub fn TeamRow(
             td {
                 class: "table-cell",
                 match person.duty_status {
-                    DutyStatus::TAR => rsx! {
+                    DutyStatus::Tar => rsx! {
                         span {
                             class: "status-badge-tar",
                             "TAR"
                         }
                     },
-                    DutyStatus::SELRES => rsx! {
+                    DutyStatus::Selres => rsx! {
                         span {
                             class: "status-badge-selres",
                             "SELRES"

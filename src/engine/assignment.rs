@@ -88,7 +88,7 @@ impl AssignmentSolver {
                 .filter_map(|al| {
                     if let (Some(team), Some(position)) = (&al.team_name, &al.position) {
                         // update this logic to dynamically calculate the instance to lock
-                        Some(position.into_role_id(team))
+                        Some(position.as_role_id(team))
                     } else {
                         None
                     }
@@ -113,7 +113,7 @@ impl AssignmentSolver {
         // role nodes
         for team in teams {
             for position in &team.required_positions {
-                let role_id = position.into_role_id(&team.name);
+                let role_id = position.as_role_id(&team.name);
 
                 if !locked_role_ids.contains(&role_id) {
                     self.role_to_node.insert(role_id.clone(), node_idx);
@@ -181,8 +181,8 @@ impl AssignmentSolver {
         let mut cost = 0;
 
         match person.duty_status {
-            DutyStatus::TAR => cost += 0,
-            DutyStatus::SELRES => cost += 15_000,
+            DutyStatus::Tar => cost += 0,
+            DutyStatus::Selres => cost += 15_000,
         }
 
         if let Some(prd) = person.prd {

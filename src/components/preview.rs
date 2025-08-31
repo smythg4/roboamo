@@ -28,8 +28,8 @@ pub fn Preview(preview_type: PreviewType) -> Element {
                     match preview_type {
                         PreviewType::Requirements => rsx!{ RequirementsPreview { data } },
                         PreviewType::QualDef => rsx!{ QualDefPreview { data } },
-                        PreviewType::ASM => rsx!{ ASMPreview { data } },
-                        PreviewType::FLTMPS => rsx!{ FLTMPSPreview { data } },
+                        PreviewType::Asm => rsx!{ ASMPreview { data } },
+                        PreviewType::Fltmps => rsx!{ FLTMPSPreview { data } },
                     }
                 } else {
                     rsx! {

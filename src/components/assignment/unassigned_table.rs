@@ -3,21 +3,21 @@ use dioxus::prelude::*;
 use itertools::Itertools;
 
 use crate::components::{SearchBar, TeamRow};
-use crate::engine::{assignment::AssignmentPlan, person::Person, team::Position};
-use crate::views::results::AssignmentUIContext;
+use crate::engine::assignment::AssignmentPlan;
+use crate::views::results::{AssignmentUIContext, SelectionChangeHandler, PersonHoverHandler, PersonLeaveHandler};
 
 #[component]
 pub fn UnassignedTable(
     assignments_signal: ReadOnlySignal<AssignmentPlan>,
     analysis_date_signal: Signal<NaiveDate>,
-    on_selection_change: EventHandler<((String, Option<String>, Option<Position>), bool)>,
-    on_person_hover: EventHandler<(Person, Option<String>, (f64, f64))>,
-    on_person_leave: EventHandler<()>,
+    on_selection_change: SelectionChangeHandler,
+    on_person_hover: PersonHoverHandler,
+    on_person_leave: PersonLeaveHandler,
 ) -> Element {
     // Get context for shared UI state
-    let ui_context = use_context::<AssignmentUIContext>();
+    let _ui_context = use_context::<AssignmentUIContext>();
     // Local search query state
-    let mut search_query = use_signal(|| String::new());
+    let mut search_query = use_signal(String::new);
 
     // Read current value from signal
     let analysis_date = analysis_date_signal();

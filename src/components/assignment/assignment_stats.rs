@@ -11,7 +11,7 @@ pub fn AssignmentStats(assignments_signal: ReadOnlySignal<AssignmentPlan>) -> El
         let assigned_selres_count = assignments
             .assignments
             .iter()
-            .filter(|assignment| assignment.person.duty_status == DutyStatus::SELRES)
+            .filter(|assignment| assignment.person.duty_status == DutyStatus::Selres)
             .count();
 
         let assigned_aw_count = assignments

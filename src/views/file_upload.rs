@@ -340,12 +340,12 @@ pub fn FileUpload(page: String) -> Element {
                                                             PreviewType::QualDef => parse_qual_defs(file).ok()
                                                                 .map(Rc::new)
                                                                 .map(ParsedData::QualDefs),
-                                                            PreviewType::ASM => parse_asm_file(file).ok()
+                                                            PreviewType::Asm => parse_asm_file(file).ok()
                                                                 .map(Rc::new)
                                                                 .map(ParsedData::Personnel),
-                                                            PreviewType::FLTMPS => parse_fltmps_file(file.clone()).ok()
+                                                            PreviewType::Fltmps => parse_fltmps_file(file.clone()).ok()
                                                                 .map(Rc::new)
-                                                                .map(ParsedData::FLTMPS)
+                                                                .map(ParsedData::Fltmps)
                                                         };
                                                         entry.parsed_data = parsed_data;
                                                     }
@@ -360,7 +360,7 @@ pub fn FileUpload(page: String) -> Element {
                                                 let prd_list_clone = app_state_write.files.get("FLTMPS")
                                                     .and_then(|entry| entry.parsed_data.as_ref())
                                                     .and_then(|data| match data {
-                                                        ParsedData::FLTMPS(prd_list) => Some(prd_list.as_ref().clone()),
+                                                        ParsedData::Fltmps(prd_list) => Some(prd_list.as_ref().clone()),
                                                         _ => None,
                                                     });
 

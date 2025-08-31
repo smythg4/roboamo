@@ -16,8 +16,8 @@ const DESCS: [&str; 4] = [
 const PREVIEWS: [PreviewType; 4] = [
     PreviewType::Requirements,
     PreviewType::QualDef,
-    PreviewType::ASM,
-    PreviewType::FLTMPS,
+    PreviewType::Asm,
+    PreviewType::Fltmps,
 ];
 const FILE_TYPES: [&str; 4] = [".csv", ".csv", ".xlsx", ".xlsx"];
 const NEXT_PAGES: [Option<&str>; 4] = [Some("Qual Defs"), Some("ASM"), Some("FLTMPS"), None];
@@ -32,15 +32,15 @@ const DEMO_PATHS: [Option<&str>; 4] = [
 pub enum PreviewType {
     Requirements,
     QualDef,
-    ASM,
-    FLTMPS,
+    Asm,
+    Fltmps,
 }
 
 #[derive(Debug, Clone)]
 pub enum ParsedData {
     Requirements(Rc<Vec<Team>>),
     QualDefs(Rc<QualTable>),
-    FLTMPS(Rc<PRDList>),
+    Fltmps(Rc<PRDList>),
     Personnel(Rc<Vec<Person>>), // Combined ASM + FLTMPS data
 }
 
