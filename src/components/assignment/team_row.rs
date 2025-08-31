@@ -98,6 +98,8 @@ pub fn TeamRow(
                     "table-row bg-yellow-50 border-l-4 border-l-yellow-400"
                 } else if is_eligible() {
                     "table-row bg-emerald-100 border-l-4 border-l-emerald-400"
+                } else if is_manual_override {
+                    "table-row border-black border bg-gray-200"
                 } else {
                     "table-row"
                 }
