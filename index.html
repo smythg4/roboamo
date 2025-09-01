@@ -5,14 +5,14 @@
     <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta charset="UTF-8" />
-  <link rel="preload" as="script" href="/roboamo/assets/roboamo-b6632044a8b5517d.js" crossorigin><link rel="preload" as="fetch" type="application/wasm" href="/roboamo/assets/roboamo_bg-2b465443b64ad307.wasm" crossorigin></head>
+  <link rel="preload" as="script" href="/roboamo/assets/roboamo-b6632044a8b5517d.js" crossorigin><link rel="preload" as="fetch" type="application/wasm" href="/roboamo/assets/roboamo_bg-8a47a0933873d477.wasm" crossorigin></head>
   <body>
     <div id="main"></div>
   <script>
             // We can't use a module script here because we need to start the script immediately when streaming
             import("/roboamo/assets/roboamo-b6632044a8b5517d.js").then(
                 ({ default: init }) => {
-                init("/roboamo/assets/roboamo_bg-2b465443b64ad307.wasm").then((wasm) => {
+                init("/roboamo/assets/roboamo_bg-8a47a0933873d477.wasm").then((wasm) => {
                     if (wasm.__wbindgen_start == undefined) {
                     wasm.main();
                     }
