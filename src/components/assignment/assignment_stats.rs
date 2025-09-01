@@ -7,7 +7,7 @@ pub fn AssignmentStats(assignments_signal: ReadOnlySignal<Option<AssignmentPlan>
     // Memoize expensive stats calculations - only recalculates when assignments change
     let stats = use_memo(move || {
         let Some(assignments) = assignments_signal() else {
-            return (0, 0, 0, 0, 0);
+            return (0, 0, 0, 0, 0, 100);
         };
 
         let assigned_selres_count = assignments
@@ -22,16 +22,24 @@ pub fn AssignmentStats(assignments_signal: ReadOnlySignal<Option<AssignmentPlan>
             .filter(|assignment| assignment.person.raterank.starts_with("AW"))
             .count();
 
+        let total_positions = assignments.assignments.len() + assignments.unfilled_positions.len();
+        let fill_percentage = if total_positions > 0 {
+            (assignments.assignments.len() as f32 / total_positions as f32 * 100.0).round() as u32
+        } else {
+            100
+        };
+
         (
             assignments.assignments.len(),
             assignments.unassigned_people.len(),
             assignments.unfilled_positions.len(),
             assigned_selres_count,
             assigned_aw_count,
+            fill_percentage,
         )
     });
 
-    let (total_assigned, total_unassigned, total_unfilled, total_selres_used, total_aw_used) =
+    let (total_assigned, total_unassigned, total_unfilled, total_selres_used, total_aw_used, fill_percentage) =
         stats();
 
     rsx! {
@@ -46,7 +54,7 @@ pub fn AssignmentStats(assignments_signal: ReadOnlySignal<Option<AssignmentPlan>
                 div {
                     class: "stat-card-assigned",
                     h3 { class: "stat-number-green", "{total_assigned}" }
-                    p { class: "stat-label-green", "People Assigned" }
+                    p { class: "stat-label-green", "People Assigned ({fill_percentage}%)" }
                 }
                 div {
                     class: "stat-card-unfilled",
