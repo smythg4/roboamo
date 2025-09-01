@@ -3,10 +3,12 @@ use dioxus::prelude::*;
 use crate::engine::{assignment::AssignmentPlan, person::DutyStatus};
 
 #[component]
-pub fn AssignmentStats(assignments_signal: ReadOnlySignal<AssignmentPlan>) -> Element {
+pub fn AssignmentStats(assignments_signal: ReadOnlySignal<Option<AssignmentPlan>>) -> Element {
     // Memoize expensive stats calculations - only recalculates when assignments change
     let stats = use_memo(move || {
-        let assignments = assignments_signal();
+        let Some(assignments) = assignments_signal() else {
+            return (0, 0, 0, 0, 0);
+        };
 
         let assigned_selres_count = assignments
             .assignments
@@ -34,7 +36,7 @@ pub fn AssignmentStats(assignments_signal: ReadOnlySignal<AssignmentPlan>) -> El
 
     rsx! {
         div {
-            class: "results-header",
+            class: "results-header m-1",
             h1 {
                 class: "results-title",
                 "Assignment Results"

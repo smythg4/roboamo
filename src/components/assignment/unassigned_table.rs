@@ -8,7 +8,7 @@ use crate::views::results::{AssignmentUIContext, SelectionChangeHandler, PersonH
 
 #[component]
 pub fn UnassignedTable(
-    assignments_signal: ReadOnlySignal<AssignmentPlan>,
+    assignments_signal: ReadOnlySignal<Option<AssignmentPlan>>,
     analysis_date_signal: Signal<NaiveDate>,
     on_selection_change: SelectionChangeHandler,
     on_person_hover: PersonHoverHandler,
@@ -24,7 +24,9 @@ pub fn UnassignedTable(
 
     // Memoize unassigned people extraction and sorting - only recalculates when assignments change
     let unassigned_people = use_memo(move || {
-        let assignments = assignments_signal();
+        let Some(assignments) = assignments_signal() else {
+            return Vec::new();
+        };
         assignments
             .unassigned_people
             .iter()
@@ -91,6 +93,7 @@ pub fn UnassignedTable(
                                 on_selection_change: on_selection_change,
                                 on_person_hover: on_person_hover,
                                 on_person_leave: on_person_leave,
+                                on_role_popup_open: Callback::new(|_| {}), // No-op callback for unassigned
                             }
                         }
                     }

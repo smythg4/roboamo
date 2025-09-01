@@ -3,14 +3,12 @@ use dioxus::prelude::*;
 #[derive(Clone, Copy, PartialEq)]
 pub enum InteractionMode {
     ViewOnly,
-    Swap,
     Lock,
 }
 
 #[derive(Clone, PartialEq)]
 pub enum InteractionAction {
     SetMode(InteractionMode),
-    ExecuteSwap,
     ExecuteLock,
     ClearLocks,
     SaveState,
@@ -29,45 +27,24 @@ pub fn InteractionBar(
     let persistent_locks_count = persistent_locks_count_signal();
     rsx! {
         div {
-            class: "sticky top-17 z-50 bg-white shadow-md border-b border-gray-200 flex gap-2 p-4 w-175",
+            class: "sticky top-17 z-50 bg-white shadow-md border border-gray-200 rounded-lg flex gap-1 p-2 m-1 w-auto",
             button {
                 class: match interaction_mode {
-                    InteractionMode::ViewOnly => "px-4 py-2 bg-gray-600 text-white rounded-lg font-medium",
-                    _ => "px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                    InteractionMode::ViewOnly => "px-3 py-1.5 bg-gray-600 text-white rounded font-medium text-sm",
+                    _ => "px-3 py-1.5 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm"
                 },
                 onclick: move |_| {
                     on_action.call(InteractionAction::SetMode(InteractionMode::ViewOnly));
                 },
                 "👁️ View Only"
             }
-            // Swap Mode - button changes when selections are ready
-            button {
-                class: match (interaction_mode, selected_count) {
-                    (InteractionMode::Swap, 2) => "px-4 py-2 bg-blue-600 text-white rounded-lg font-medium animate-pulse",
-                    (InteractionMode::Swap, _) => "px-4 py-2 bg-blue-500 text-white rounded-lg font-medium",
-                    _ => "px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300",
-                },
-                onclick: move |_| {
-                    if interaction_mode == InteractionMode::Swap && selected_count == 2 {
-                        on_action.call(InteractionAction::ExecuteSwap);
-                    } else {
-                        on_action.call(InteractionAction::SetMode(InteractionMode::Swap));
-                    }
-                },
-                match (interaction_mode, selected_count) {
-                    (InteractionMode::Swap, 2) => "🔄 Execute Swap",
-                    (InteractionMode::Swap, 1) => "🔄 Select One More",
-                    (InteractionMode::Swap, _) => "🔄 Swap Mode",
-                    _ => "🔄 Swap Mode"
-                }
-            }
 
             // Lock Mode - button changes when selections exist
             button {
                 class: match (interaction_mode, selected_count) {
-                    (InteractionMode::Lock, n) if n > 0 => "px-4 py-2 bg-orange-600 text-white rounded-lg font-medium animate-pulse",
-                    (InteractionMode::Lock, _) => "px-4 py-2 bg-orange-500 text-white rounded-lg font-medium",
-                    _ => "px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                    (InteractionMode::Lock, n) if n > 0 => "px-3 py-1.5 bg-orange-600 text-white rounded font-medium animate-pulse text-sm",
+                    (InteractionMode::Lock, _) => "px-3 py-1.5 bg-orange-500 text-white rounded font-medium text-sm",
+                    _ => "px-3 py-1.5 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm"
                 },
                 onclick: move |_| {
                     if interaction_mode == InteractionMode::Lock && selected_count > 0 {
@@ -85,7 +62,7 @@ pub fn InteractionBar(
 
             // button to clear all locked selections
             button {
-                class: "px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600",
+                class: "px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600",
                 onclick: move |_| {
                     on_action.call(InteractionAction::ClearLocks);
                 },
@@ -94,7 +71,7 @@ pub fn InteractionBar(
 
             // button to save current state
             button {
-                class: "px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700",
+                class: "px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700",
                 onclick: move |_| {
                     on_action.call(InteractionAction::SaveState);
                 },

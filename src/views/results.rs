@@ -20,11 +20,12 @@ use crate::engine::{
 pub type SelectionChangeHandler = Callback<((String, Option<String>, Option<Position>), bool)>;
 pub type PersonHoverHandler = Callback<(Person, Option<String>, (f64, f64))>;
 pub type PersonLeaveHandler = Callback<()>;
+pub type RolePopupOpenHandler = Callback<(Position, String, Option<Person>, (f64, f64))>; // (position, team_name, current_person, coords)
 pub type AssignmentSelection = Vec<(String, Option<String>, Option<Position>)>;
 
 // Local crate imports - other
 use crate::{
-    components::{AnalysisDateBar, AssignmentStats, InteractionAction, InteractionBar, InteractionMode, PlayerCard, TeamCard, UnassignedTable},
+    components::{AnalysisDateBar, AssignmentStats, InteractionAction, InteractionBar, InteractionMode, PlayerCard, RolePopup, TeamCard, UnassignedTable},
     utilities::{AppState, SaveState},
 };
 
@@ -42,6 +43,9 @@ pub fn Results() -> Element {
     let mut hovered_person = use_signal(|| None::<(Person, Option<String>)>); // (person, current assignment)
     let mut mouse_position = use_signal(|| (0.0, 0.0));
     let selected_date = use_signal(|| chrono::Utc::now().date_naive());
+    
+    // Popup state
+    let mut role_popup_state = use_signal(|| None::<(Position, String, Option<Person>, (f64, f64))>); // (position, team_name, current_person, popup_position)
 
     // Subscribe to app state changes
     let mut app_state = use_context::<Signal<AppState>>();
@@ -243,19 +247,40 @@ pub fn Results() -> Element {
         hovered_person.set(None);
     });
 
+    // Popup handlers
+    let on_role_popup_open = Callback::new(
+        move |(position, team_name, current_person, coords): (Position, String, Option<Person>, (f64, f64))| {
+            role_popup_state.set(Some((position, team_name, current_person, coords)));
+        }
+    );
+
+    let on_role_popup_close = Callback::new(move |_| {
+        role_popup_state.set(None);
+    });
+
+    let on_role_swap = Callback::new(move |person_name: String| {
+        if let Some((position, team_name, current_person, _)) = role_popup_state() {
+            // Implement the simplified approach: unassign current person and assign new person
+            app_state.with_mut(|state| {
+                // Remove current assignment if someone is assigned
+                if let Some(_current) = current_person {
+                    state.persistent_locks.remove(&(team_name.clone(), position.clone()));
+                }
+                
+                // Add new assignment (unless empty string for unassign)
+                if !person_name.is_empty() {
+                    state.persistent_locks.insert((team_name, position), person_name);
+                }
+            });
+        }
+    });
+
     // Handle InteractionBar actions
     let on_interaction_action = move |action: InteractionAction| {
         match action {
             InteractionAction::SetMode(mode) => {
                 interaction_mode.set(mode);
                 selected_assignments.set(vec![]);
-            }
-            InteractionAction::ExecuteSwap => {
-                app_state.with_mut(|state| {
-                    execute_swap_action(&selected_assignments(), &mut state.persistent_locks);
-                });
-                selected_assignments.set(vec![]);
-                interaction_mode.set(InteractionMode::ViewOnly);
             }
             InteractionAction::ExecuteLock => {
                 app_state.with_mut(|state| {
@@ -324,7 +349,7 @@ pub fn Results() -> Element {
 
         // Header with summary stats
         AssignmentStats {
-            assignments_signal: assignments.read().clone().unwrap(),
+            assignments_signal: assignments,
         }
         // Interaction toolbar
         InteractionBar {
@@ -350,11 +375,12 @@ pub fn Results() -> Element {
                 for team in teams_sorted() {
                     TeamCard {
                         team: team.clone(),
-                        assignments_signal: assignments.read().clone().unwrap(),
+                        assignments_signal: assignments,
                         analysis_date_signal: selected_date,
                         on_selection_change: on_selection_change,
                         on_person_hover: on_person_hover,
                         on_person_leave: on_person_leave,
+                        on_role_popup_open: on_role_popup_open,
                     }
                 }
             }
@@ -363,7 +389,7 @@ pub fn Results() -> Element {
         // Unassigned Personnel
         if !unassigned_people().is_empty() {
             UnassignedTable {
-                assignments_signal: assignments.read().clone().unwrap(),
+                assignments_signal: assignments,
                 analysis_date_signal: selected_date,
                 on_selection_change: on_selection_change,
                 on_person_hover: on_person_hover,
@@ -378,28 +404,24 @@ pub fn Results() -> Element {
                 position: mouse_position(),
             }
         }
+
+        // Render popup inside main container like PlayerCard
+        if let Some((position, team_name, current_person, popup_position)) = role_popup_state() {
+            RolePopup {
+                position,
+                team_name,
+                current_person,
+                assignments_signal: assignments,
+                popup_position,
+                on_swap: on_role_swap,
+                on_close: on_role_popup_close,
+            }
+        }
     } // Close main div
     } // Close rsx! block
 }
 
 // Helper functions for interaction actions
-fn execute_swap_action(
-    selections: &[(String, Option<String>, Option<Position>)],
-    persistent_locks: &mut HashMap<(String, Position), String>,
-) {
-    if selections.len() == 2 {
-        let (person1, team1, pos1) = &selections[0];
-        let (person2, team2, pos2) = &selections[1];
-        
-        if let (Some(team), Some(pos)) = (team2, pos2) {
-            persistent_locks.insert((team.clone(), pos.clone()), person1.clone());
-        };
-        if let (Some(team), Some(pos)) = (team1, pos1) {
-            persistent_locks.insert((team.clone(), pos.clone()), person2.clone());
-        };
-
-    }
-}
 
 fn execute_lock_action(
     selections: &[(String, Option<String>, Option<Position>)],
@@ -414,7 +436,6 @@ fn execute_lock_action(
 
 fn should_add_selection(interaction_mode: InteractionMode, current_count: usize) -> bool {
     match interaction_mode {
-        InteractionMode::Swap => current_count < 2,
         InteractionMode::Lock => true,
         InteractionMode::ViewOnly => false,
     }

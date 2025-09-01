@@ -96,7 +96,7 @@
   }
 
   .results-header {
-    @apply bg-white rounded-xl shadow-lg p-8;
+    @apply bg-white rounded-xl shadow-lg p-4;
   }
 
   .results-title {
@@ -203,7 +203,7 @@
   }
 
   .table-cell-name {
-    @apply px-4 py-3 text-xs text-gray-800;
+    @apply px-4 py-3 text-xs text-gray-800 min-w-48;
   }
 
   .table-cell-muted {
@@ -212,6 +212,18 @@
 
   .table-cell-small {
     @apply px-4 py-3 text-xs text-gray-600;
+  }
+
+  .table-cell-checkbox {
+    @apply px-2 py-3 text-center w-12;
+  }
+
+  .table-cell-compact {
+    @apply px-2 py-3 text-center text-xs text-gray-900;
+  }
+
+  .table-cell-muted-compact {
+    @apply px-2 py-3 text-xs text-gray-600;
   }
 
   /* Badges */

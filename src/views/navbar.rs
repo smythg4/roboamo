@@ -4,6 +4,7 @@ use dioxus::prelude::*;
 use crate::components::ProgressBar;
 use crate::utilities::config::PAGES;
 use crate::utilities::AppState;
+
 use std::rc::Rc;
 
 #[cfg(target_arch = "wasm32")]

@@ -1,6 +1,9 @@
 mod role_badge;
 pub use role_badge::RoleBadge;
 
+mod role_popup;
+pub use role_popup::RolePopup;
+
 mod team_card;
 pub use team_card::TeamCard;
 

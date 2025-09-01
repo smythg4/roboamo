@@ -28,4 +28,4 @@ pub use player_card::PlayerCard;
 
 // Domain-specific component modules
 pub mod assignment;
-pub use assignment::{AssignmentStats, RoleBadge, TeamCard, TeamRow, UnassignedTable};
+pub use assignment::{AssignmentStats, RoleBadge, RolePopup, TeamCard, TeamRow, UnassignedTable};

@@ -7,16 +7,17 @@ use crate::engine::{
     assignment::AssignmentPlan,
     team::Team,
 };
-use crate::views::results::{AssignmentUIContext, SelectionChangeHandler, PersonHoverHandler, PersonLeaveHandler};
+use crate::views::results::{AssignmentUIContext, SelectionChangeHandler, PersonHoverHandler, PersonLeaveHandler, RolePopupOpenHandler};
 
 #[component]
 pub fn TeamCard(
     team: Team,
-    assignments_signal: ReadOnlySignal<AssignmentPlan>,
+    assignments_signal: ReadOnlySignal<Option<AssignmentPlan>>,
     analysis_date_signal: Signal<NaiveDate>,
     on_selection_change: SelectionChangeHandler,
     on_person_hover: PersonHoverHandler,
     on_person_leave: PersonLeaveHandler,
+    on_role_popup_open: RolePopupOpenHandler,
 ) -> Element {
     // Note: Context available but not used in this component yet
     let _ui_context = use_context::<AssignmentUIContext>();
@@ -24,7 +25,9 @@ pub fn TeamCard(
     let team_assignments = use_memo({
         let team_name = team.name.clone();
         move || {
-            let assignments = assignments_signal();
+            let Some(assignments) = assignments_signal() else {
+                return Vec::new();
+            };
             assignments
                 .assignments
                 .iter()
@@ -39,7 +42,9 @@ pub fn TeamCard(
     let unfilled_positions = use_memo({
         let team_name = team.name.clone();
         move || {
-            let assignments = assignments_signal();
+            let Some(assignments) = assignments_signal() else {
+                return Vec::new();
+            };
             assignments
                 .unfilled_positions
                 .iter()
@@ -85,6 +90,7 @@ pub fn TeamCard(
                                 on_selection_change: on_selection_change,
                                 on_person_hover: on_person_hover,
                                 on_person_leave: on_person_leave,
+                                on_role_popup_open: on_role_popup_open,
                             }
                         }
 
