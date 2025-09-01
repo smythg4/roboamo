@@ -9,7 +9,10 @@ use crate::engine::{
     person::{DutyStatus, Person},
     team::{Position, Team},
 };
-use crate::views::results::{AssignmentUIContext, SelectionChangeHandler, PersonHoverHandler, PersonLeaveHandler, RolePopupOpenHandler};
+use crate::views::results::{
+    AssignmentUIContext, PersonHoverHandler, PersonLeaveHandler, RolePopupOpenHandler,
+    SelectionChangeHandler,
+};
 
 #[component]
 pub fn TeamRow(
@@ -240,7 +243,6 @@ fn is_checkbox_disabled(
         InteractionMode::ViewOnly => true,
     }
 }
-
 
 fn get_prd_css_class(prd: chrono::NaiveDate, today: chrono::NaiveDate) -> &'static str {
     let months_remaining =

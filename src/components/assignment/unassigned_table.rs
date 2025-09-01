@@ -4,7 +4,9 @@ use itertools::Itertools;
 
 use crate::components::{SearchBar, TeamRow};
 use crate::engine::assignment::AssignmentPlan;
-use crate::views::results::{AssignmentUIContext, SelectionChangeHandler, PersonHoverHandler, PersonLeaveHandler};
+use crate::views::results::{
+    AssignmentUIContext, PersonHoverHandler, PersonLeaveHandler, SelectionChangeHandler,
+};
 
 #[component]
 pub fn UnassignedTable(

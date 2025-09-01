@@ -244,7 +244,7 @@ pub fn generate_assignments_from_processed_data(
         Some(prd_date) => prd_date > analysis_date,
         None => true,
     });
-    
+
     let people = Rc::new(filtered_people);
     let teams = Rc::new(teams);
     let mut solver =

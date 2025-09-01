@@ -6,20 +6,20 @@ pub fn import_save_state(json_content: &str) -> Result<SaveState> {
     // Parse JSON
     let save_state: SaveState = serde_json::from_str(json_content)
         .context("Failed to parse JSON - file may be corrupted or invalid format")?;
-    
+
     // Validate version compatibility
     validate_version(&save_state.version)?;
-    
+
     // Validate data integrity
     validate_save_state(&save_state)?;
-    
+
     Ok(save_state)
 }
 
 /// Check version compatibility
 fn validate_version(version: &str) -> Result<()> {
     let current_version = env!("CARGO_PKG_VERSION");
-    
+
     // For now, only exact version match (we can make this more flexible later)
     if version != current_version {
         return Err(anyhow::anyhow!(
@@ -28,7 +28,7 @@ fn validate_version(version: &str) -> Result<()> {
             current_version
         ));
     }
-    
+
     Ok(())
 }
 
@@ -38,11 +38,11 @@ fn validate_save_state(save_state: &SaveState) -> Result<()> {
     if save_state.people.is_empty() {
         return Err(anyhow::anyhow!("Invalid save state: No people data found"));
     }
-    
+
     if save_state.teams.is_empty() {
         return Err(anyhow::anyhow!("Invalid save state: No teams data found"));
     }
-    
+
     // Validate locks reference valid people and positions
     for lock in &save_state.persistent_locks {
         // Check if the locked person exists in people data
@@ -53,7 +53,7 @@ fn validate_save_state(save_state: &SaveState) -> Result<()> {
                 lock.person_name
             ));
         }
-        
+
         // If lock has a team_name, verify it exists
         if let Some(ref team_name) = lock.team_name {
             let team_exists = save_state.teams.iter().any(|t| t.name == *team_name);
@@ -64,7 +64,7 @@ fn validate_save_state(save_state: &SaveState) -> Result<()> {
                 ));
             }
         }
-        
+
         // If lock has a position, verify the team has that position
         if let (Some(ref team_name), Some(ref position)) = (&lock.team_name, &lock.position) {
             let team = save_state.teams.iter().find(|t| t.name == *team_name);
@@ -81,10 +81,9 @@ fn validate_save_state(save_state: &SaveState) -> Result<()> {
             }
         }
     }
-    
+
     Ok(())
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -131,24 +130,24 @@ mod tests {
             "export_timestamp": "2025-08-31T12:00:00Z",
             "version": "0.1.0"
         }"#;
-        
+
         let result = import_save_state(json);
         assert!(result.is_ok());
-        
+
         let save_state = result.unwrap();
         assert_eq!(save_state.people.len(), 1);
         assert_eq!(save_state.teams.len(), 1);
         assert_eq!(save_state.persistent_locks.len(), 1);
     }
-    
+
     #[test]
     fn test_import_invalid_json() {
         let invalid_json = r#"{ "invalid": "json" }"#;
-        
+
         let result = import_save_state(invalid_json);
         assert!(result.is_err());
     }
-    
+
     #[test]
     fn test_version_mismatch() {
         let json = r#"{
@@ -160,7 +159,7 @@ mod tests {
             "export_timestamp": "2025-08-31T12:00:00Z",
             "version": "999.0.0"
         }"#;
-        
+
         let result = import_save_state(json);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("Version mismatch"));

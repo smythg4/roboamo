@@ -3,11 +3,11 @@ use dioxus::prelude::*;
 use itertools::Itertools;
 
 use crate::components::TeamRow;
-use crate::engine::{
-    assignment::AssignmentPlan,
-    team::Team,
+use crate::engine::{assignment::AssignmentPlan, team::Team};
+use crate::views::results::{
+    AssignmentUIContext, PersonHoverHandler, PersonLeaveHandler, RolePopupOpenHandler,
+    SelectionChangeHandler,
 };
-use crate::views::results::{AssignmentUIContext, SelectionChangeHandler, PersonHoverHandler, PersonLeaveHandler, RolePopupOpenHandler};
 
 #[component]
 pub fn TeamCard(
@@ -33,6 +33,7 @@ pub fn TeamCard(
                 .iter()
                 .filter(|a| a.team_name == team_name)
                 .cloned()
+                .sorted_by(|a, b| a.position.qualification.cmp(&b.position.qualification))
                 .sorted_by_key(|a| !a.manual_override)
                 .collect::<Vec<_>>()
         }

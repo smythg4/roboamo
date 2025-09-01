@@ -2,11 +2,9 @@ use chrono::NaiveDate;
 use dioxus::prelude::*;
 
 #[component]
-pub fn AnalysisDateBar(
-    selected_date_signal: Signal<NaiveDate>,
-) -> Element {
+pub fn AnalysisDateBar(selected_date_signal: Signal<NaiveDate>) -> Element {
     let selected_date = selected_date_signal();
-    
+
     rsx! {
         div {
             class: "sticky top-30 z-50 bg-white shadow-md border border-gray-200 rounded-lg flex items-center gap-1 p-2 m-1 w-auto",

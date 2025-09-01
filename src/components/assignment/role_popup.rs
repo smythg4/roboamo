@@ -3,13 +3,13 @@ use itertools::Itertools;
 #[cfg(target_arch = "wasm32")]
 use {wasm_bindgen, web_sys};
 
+use crate::components::InteractionMode;
 use crate::engine::{
     assignment::AssignmentPlan,
     person::{DutyStatus, Person},
     team::Position,
 };
 use crate::views::results::AssignmentUIContext;
-use crate::components::InteractionMode;
 
 #[component]
 pub fn RolePopup(
@@ -18,16 +18,16 @@ pub fn RolePopup(
     team_name: String,
     current_person: Option<Person>,
     assignments_signal: ReadOnlySignal<Option<AssignmentPlan>>,
-    
+
     // Positioning
     popup_position: (f64, f64),
-    
+
     // Actions
     on_swap: Callback<String>,
     on_close: Callback<()>,
 ) -> Element {
     let ui_context = use_context::<AssignmentUIContext>();
-    
+
     // Get people who can fill this role with their current assignments
     let eligible_people = use_memo({
         let position_clone = position.clone();
@@ -37,7 +37,7 @@ pub fn RolePopup(
             let Some(assignments_plan) = assignments_signal() else {
                 return Vec::new();
             };
-            
+
             people
                 .iter()
                 .filter(|person| {
@@ -48,9 +48,11 @@ pub fn RolePopup(
                 })
                 .map(|person| {
                     // Find current assignment for this person
-                    let current_assignment = assignments_plan.assignments.iter()
+                    let current_assignment = assignments_plan
+                        .assignments
+                        .iter()
                         .find(|assignment| assignment.person.name == person.name);
-                    
+
                     (person.clone(), current_assignment.cloned())
                 })
                 .sorted_by_key(|(person, assignment)| {
@@ -58,7 +60,9 @@ pub fn RolePopup(
                     (
                         assignment.is_some(), // unassigned people (None) sort first
                         person.duty_status != DutyStatus::Tar,
-                        person.prd.unwrap_or(chrono::NaiveDate::from_ymd_opt(2099, 12, 31).unwrap())
+                        person
+                            .prd
+                            .unwrap_or(chrono::NaiveDate::from_ymd_opt(2099, 12, 31).unwrap()),
                     )
                 })
                 .collect::<Vec<_>>()
@@ -77,13 +81,13 @@ pub fn RolePopup(
             style: "z-index: 9998;",
             onclick: move |_| on_close.call(()),
         }
-        
+
         // Main popup - styled like PlayerCard
         div {
             class: "absolute bg-white border border-gray-300 rounded-lg shadow-lg p-4 max-w-sm",
             style: "left: {x + 100.0}px; top: {y - 100.0}px; z-index: 9999; width: 300px;",
             onclick: |e| e.stop_propagation(), // Prevent closing when clicking inside
-            
+
             // Header - slimmed down
             div {
                 class: "font-bold text-base mb-1",
@@ -100,7 +104,7 @@ pub fn RolePopup(
                     "Currently unassigned"
                 }
             }
-            
+
             // Eligible people section
             if eligible_people_list.is_empty() {
                 div {
@@ -118,7 +122,7 @@ pub fn RolePopup(
                         div {
                             key: "{person.name}",
                             class: "flex items-center justify-between p-1.5 rounded hover:bg-gray-50 border border-gray-100",
-                            
+
                             // Person info - streamlined
                             div {
                                 class: "flex-1 min-w-0",
@@ -141,7 +145,7 @@ pub fn RolePopup(
                                     }
                                 }
                             }
-                            
+
                             // Swap button
                             button {
                                 class: "ml-2 px-2 py-0.5 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors",
@@ -158,11 +162,11 @@ pub fn RolePopup(
                     }
                 }
             }
-            
+
             // Footer actions
             div {
                 class: "flex justify-between gap-2 pt-2 border-t border-gray-200",
-                
+
                 // Leave unassigned option (if someone is currently assigned)
                 if current_person.is_some() {
                     button {
@@ -174,7 +178,7 @@ pub fn RolePopup(
                         "Unassign"
                     }
                 }
-                
+
                 button {
                     class: "flex-1 px-3 py-1.5 bg-gray-200 text-gray-700 text-xs rounded hover:bg-gray-300 transition-colors",
                     onclick: move |_| on_close.call(()),
@@ -184,4 +188,3 @@ pub fn RolePopup(
         }
     }
 }
-

@@ -194,7 +194,7 @@ pub fn Navbar() -> Element {
                                         spawn(async move {
                                             #[cfg(target_arch = "wasm32")]
                                             web_sys::console::log_1(&wasm_bindgen::JsValue::from_str("Starting file load..."));
-                                            
+
                                             match _evt.files() {
                                                 Some(file_engine) => {
                                                     let files = file_engine.files();
@@ -206,42 +206,42 @@ pub fn Navbar() -> Element {
                                                                         // Parse and validate save state
                                                                         #[cfg(target_arch = "wasm32")]
                                                                         web_sys::console::log_1(&wasm_bindgen::JsValue::from_str("File read successfully, parsing JSON..."));
-                                                                        
+
                                                                         match crate::utilities::import::import_save_state(&json_content) {
                                                                             Ok(save_state) => {
                                                                                 // Update the application state by populating the parsed_data
                                                                                 let mut current_state = state_clone();
-                                                                                
+
                                                                                 // Clear all previous file data
                                                                                 for config in current_state.files.values_mut() {
                                                                                     config.file_content = None;
                                                                                     config.file_name = None;
                                                                                     config.parsed_data = None;
                                                                                 }
-                                                                                
+
                                                                                 // Populate with save state data
                                                                                 if let Some(requirements_config) = current_state.files.get_mut("Requirements") {
                                                                                     requirements_config.parsed_data = Some(crate::utilities::config::ParsedData::Requirements(Rc::new(save_state.teams.clone())));
                                                                                 }
-                                                                                
+
                                                                                 if let Some(asm_config) = current_state.files.get_mut("ASM") {
                                                                                     asm_config.parsed_data = Some(crate::utilities::config::ParsedData::Personnel(Rc::new(save_state.people.clone())));
                                                                                 }
-                                                                                
+
                                                                                 if let Some(qual_defs_config) = current_state.files.get_mut("Qual Defs") {
                                                                                     qual_defs_config.parsed_data = Some(crate::utilities::config::ParsedData::QualDefs(Rc::new(save_state.qual_defs.clone())));
                                                                                 }
-                                                                                
+
                                                                                 // We don't populate FLTMPS since PRD data is already in Person objects
-                                                                                
+
                                                                                 // Restore persistent locks
                                                                                 current_state.persistent_locks = save_state.locks_to_hashmap();
-                                                                                
+
                                                                                 state_clone.set(current_state);
-                                                                                
+
                                                                                 #[cfg(target_arch = "wasm32")]
                                                                                 web_sys::console::log_1(&wasm_bindgen::JsValue::from_str("State updated successfully, navigating to results..."));
-                                                                                
+
                                                                                 // Navigate to results page after successful load
                                                                                 navigator.push(Route::Results {});
                                                                             }

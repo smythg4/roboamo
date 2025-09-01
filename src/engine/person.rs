@@ -29,7 +29,6 @@ impl Person {
     // pub fn get_raterank(&self) -> &str {
     //     &self.raterank
     // }
-
 }
 
 impl Display for Person {

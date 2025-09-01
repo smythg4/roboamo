@@ -11,7 +11,10 @@ use {wasm_bindgen, web_sys};
 // Local crate imports - engine
 use crate::engine::{
     assignment::{AssignmentLock, FlowAssignment},
-    builder::{build_assignment_plan, generate_assignments, generate_assignments_from_processed_data, AssignmentResult},
+    builder::{
+        build_assignment_plan, generate_assignments, generate_assignments_from_processed_data,
+        AssignmentResult,
+    },
     person::Person,
     team::{Position, Team},
 };
@@ -25,7 +28,10 @@ pub type AssignmentSelection = Vec<(String, Option<String>, Option<Position>)>;
 
 // Local crate imports - other
 use crate::{
-    components::{AnalysisDateBar, AssignmentStats, InteractionAction, InteractionBar, InteractionMode, PlayerCard, RolePopup, TeamCard, UnassignedTable},
+    components::{
+        AnalysisDateBar, AssignmentStats, InteractionAction, InteractionBar, InteractionMode,
+        PlayerCard, RolePopup, TeamCard, UnassignedTable,
+    },
     utilities::{AppState, SaveState},
 };
 
@@ -43,9 +49,10 @@ pub fn Results() -> Element {
     let mut hovered_person = use_signal(|| None::<(Person, Option<String>)>); // (person, current assignment)
     let mut mouse_position = use_signal(|| (0.0, 0.0));
     let selected_date = use_signal(|| chrono::Utc::now().date_naive());
-    
+
     // Popup state
-    let mut role_popup_state = use_signal(|| None::<(Position, String, Option<Person>, (f64, f64))>); // (position, team_name, current_person, popup_position)
+    let mut role_popup_state =
+        use_signal(|| None::<(Position, String, Option<Person>, (f64, f64))>); // (position, team_name, current_person, popup_position)
 
     // Subscribe to app state changes
     let mut app_state = use_context::<Signal<AppState>>();
@@ -60,14 +67,50 @@ pub fn Results() -> Element {
     use_effect(move || {
         // Read app state to trigger recomputation on changes
         let app_state_val = app_state();
-        let _ = selected_date();
+        let current_date = selected_date();
         let current_persistent_locks = app_state_val.persistent_locks.clone();
-        
-        #[cfg(target_arch = "wasm32")]
-        web_sys::console::log_1(&wasm_bindgen::JsValue::from_str("Results useEffect triggered - checking for data changes..."));
 
-        let all_locks = if !current_persistent_locks.is_empty() {
-            let assignment_locks = current_persistent_locks
+        #[cfg(target_arch = "wasm32")]
+        web_sys::console::log_1(&wasm_bindgen::JsValue::from_str(
+            "Results useEffect triggered - checking for data changes...",
+        ));
+
+        // Filter persistent_locks to retain only people whose PRD hasn't passed
+        let mut filtered_persistent_locks = current_persistent_locks.clone();
+        if !filtered_persistent_locks.is_empty() {
+            // Extract people data to check PRDs
+            let people_data = app_state_val
+                .files
+                .get("ASM")
+                .and_then(|config| config.parsed_data.as_ref())
+                .and_then(|data| match data {
+                    crate::utilities::config::ParsedData::Personnel(people) => {
+                        Some(people.as_ref())
+                    }
+                    _ => None,
+                });
+
+            if let Some(people) = people_data {
+                filtered_persistent_locks.retain(|_key, person_name| {
+                    people.iter().any(|person| {
+                        person.name == *person_name && match person.prd {
+                            Some(prd_date) => prd_date > current_date,
+                            None => true,
+                        }
+                    })
+                });
+
+                // Update app state with filtered locks if any were removed
+                if filtered_persistent_locks.len() != current_persistent_locks.len() {
+                    app_state.with_mut(|state| {
+                        state.persistent_locks = filtered_persistent_locks.clone();
+                    });
+                }
+            }
+        }
+
+        let all_locks = if !filtered_persistent_locks.is_empty() {
+            let assignment_locks = filtered_persistent_locks
                 .iter()
                 .map(|((team_name, position), person)| AssignmentLock {
                     person_name: person.clone(),
@@ -82,37 +125,60 @@ pub fn Results() -> Element {
 
         // Generate fresh assignments
         let app_state_read = &app_state_val;
-        
+
         // Check if we have data loaded from save state vs file uploads
-        let has_fltmps = app_state_read.files.get("FLTMPS")
+        let has_fltmps = app_state_read
+            .files
+            .get("FLTMPS")
             .and_then(|config| config.parsed_data.as_ref())
             .is_some();
-        let has_requirements = app_state_read.files.get("Requirements")
+        let has_requirements = app_state_read
+            .files
+            .get("Requirements")
             .and_then(|config| config.parsed_data.as_ref())
             .is_some();
-        let has_asm = app_state_read.files.get("ASM")
+        let has_asm = app_state_read
+            .files
+            .get("ASM")
             .and_then(|config| config.parsed_data.as_ref())
             .is_some();
-        
+
         let data = if has_requirements && has_asm && !has_fltmps {
             // This looks like save state data - use processed data directly
-            let teams = app_state_read.files.get("Requirements")
+            let teams = app_state_read
+                .files
+                .get("Requirements")
                 .and_then(|config| config.parsed_data.as_ref())
                 .and_then(|data| match data {
-                    crate::utilities::config::ParsedData::Requirements(teams) => Some(teams.as_ref().clone()),
+                    crate::utilities::config::ParsedData::Requirements(teams) => {
+                        Some(teams.as_ref().clone())
+                    }
                     _ => None,
                 });
-            let people = app_state_read.files.get("ASM")
+            let people = app_state_read
+                .files
+                .get("ASM")
                 .and_then(|config| config.parsed_data.as_ref())
                 .and_then(|data| match data {
-                    crate::utilities::config::ParsedData::Personnel(people) => Some(people.as_ref().clone()),
+                    crate::utilities::config::ParsedData::Personnel(people) => {
+                        Some(people.as_ref().clone())
+                    }
                     _ => None,
                 });
-                
+
             match (people, teams) {
                 (Some(people), Some(teams)) => {
-                    match generate_assignments_from_processed_data(selected_date(), all_locks, people, teams) {
-                        Ok(AssignmentResult { flow_assignments, people, teams }) => Some((flow_assignments, people, teams)),
+                    match generate_assignments_from_processed_data(
+                        selected_date(),
+                        all_locks,
+                        people,
+                        teams,
+                    ) {
+                        Ok(AssignmentResult {
+                            flow_assignments,
+                            people,
+                            teams,
+                        }) => Some((flow_assignments, people, teams)),
                         Err(e) => {
                             eprintln!("Error generating assignments from processed data: {:?}", e);
                             None
@@ -124,7 +190,11 @@ pub fn Results() -> Element {
         } else {
             // Use normal file upload flow
             match generate_assignments(selected_date(), all_locks, &app_state_read) {
-                Ok(AssignmentResult { flow_assignments, people, teams }) => Some((flow_assignments, people, teams)),
+                Ok(AssignmentResult {
+                    flow_assignments,
+                    people,
+                    teams,
+                }) => Some((flow_assignments, people, teams)),
                 Err(e) => {
                     eprintln!("Error generating assignments: {:?}", e);
                     None
@@ -223,25 +293,28 @@ pub fn Results() -> Element {
     });
 
     // Event handlers - these will be passed as props, not in context
-    let on_selection_change = Callback::new(move |((person_name, team, position), is_checked): (
-        (String, Option<String>, Option<Position>),
-        bool,
-    )| {
-        let assignment_id = (person_name, team, position);
-        let new_selections = toggle_assignment_selection(
-            assignment_id,
-            is_checked,
-            selected_assignments(),
-            interaction_mode(),
-        );
-        selected_assignments.set(new_selections);
-    });
+    let on_selection_change = Callback::new(
+        move |((person_name, team, position), is_checked): (
+            (String, Option<String>, Option<Position>),
+            bool,
+        )| {
+            let assignment_id = (person_name, team, position);
+            let new_selections = toggle_assignment_selection(
+                assignment_id,
+                is_checked,
+                selected_assignments(),
+                interaction_mode(),
+            );
+            selected_assignments.set(new_selections);
+        },
+    );
 
     let on_person_hover = Callback::new(
         move |(person, assignment, coords): (Person, Option<String>, (f64, f64))| {
             hovered_person.set(Some((person, assignment)));
             mouse_position.set(coords);
-        });
+        },
+    );
 
     let on_person_leave = Callback::new(move |_| {
         hovered_person.set(None);
@@ -249,9 +322,14 @@ pub fn Results() -> Element {
 
     // Popup handlers
     let on_role_popup_open = Callback::new(
-        move |(position, team_name, current_person, coords): (Position, String, Option<Person>, (f64, f64))| {
+        move |(position, team_name, current_person, coords): (
+            Position,
+            String,
+            Option<Person>,
+            (f64, f64),
+        )| {
             role_popup_state.set(Some((position, team_name, current_person, coords)));
-        }
+        },
     );
 
     let on_role_popup_close = Callback::new(move |_| {
@@ -264,12 +342,16 @@ pub fn Results() -> Element {
             app_state.with_mut(|state| {
                 // Remove current assignment if someone is assigned
                 if let Some(_current) = current_person {
-                    state.persistent_locks.remove(&(team_name.clone(), position.clone()));
+                    state
+                        .persistent_locks
+                        .remove(&(team_name.clone(), position.clone()));
                 }
-                
+
                 // Add new assignment (unless empty string for unassign)
                 if !person_name.is_empty() {
-                    state.persistent_locks.insert((team_name, position), person_name);
+                    state
+                        .persistent_locks
+                        .insert((team_name, position), person_name);
                 }
             });
         }
@@ -300,16 +382,19 @@ pub fn Results() -> Element {
                 if let Some((_, ref people, ref teams)) = *current_raw_data {
                     // Extract qual_defs from app state
                     let app_state_read = app_state.read();
-                    let qual_defs = app_state_read.files
+                    let qual_defs = app_state_read
+                        .files
                         .get("Qual Defs")
                         .and_then(|config| config.parsed_data.as_ref())
                         .and_then(|data| match data {
-                            crate::utilities::config::ParsedData::QualDefs(quals) => Some(quals.as_ref()),
+                            crate::utilities::config::ParsedData::QualDefs(quals) => {
+                                Some(quals.as_ref())
+                            }
                             _ => None,
                         })
                         .cloned()
                         .unwrap_or_default();
-                    
+
                     let save_state = SaveState::new(
                         selected_date(),
                         people,
@@ -317,17 +402,20 @@ pub fn Results() -> Element {
                         &qual_defs,
                         &app_state_read.persistent_locks,
                     );
-                    
+
                     // Trigger download with timestamp
                     #[cfg(target_arch = "wasm32")]
                     {
                         let timestamp = save_state.export_timestamp.format("%Y%m%d_%H%M%S");
                         let filename = format!("roboamo-save-state-{}.json", timestamp);
                         if let Err(e) = save_state.download(&filename) {
-                            web_sys::console::error_1(&wasm_bindgen::JsValue::from_str(&format!("Failed to download save state: {}", e)));
+                            web_sys::console::error_1(&wasm_bindgen::JsValue::from_str(&format!(
+                                "Failed to download save state: {}",
+                                e
+                            )));
                         }
                     }
-                    
+
                     #[cfg(not(target_arch = "wasm32"))]
                     {
                         // For non-WASM platforms, just log the JSON
