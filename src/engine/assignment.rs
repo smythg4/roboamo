@@ -57,12 +57,12 @@ impl AssignmentSolver {
 
         let mut solver = AssignmentSolver {
             graph: FlowGraph::new(total_nodes),
-            person_to_node: HashMap::new(),
-            node_to_person: HashMap::new(),
-            role_to_node: HashMap::new(),
-            node_to_role: HashMap::new(),
-            team_to_node: HashMap::new(),
-            node_to_team: HashMap::new(),
+            person_to_node: HashMap::with_capacity(num_people),
+            node_to_person: HashMap::with_capacity(num_people),
+            role_to_node: HashMap::with_capacity(num_roles),
+            node_to_role: HashMap::with_capacity(num_roles),
+            team_to_node: HashMap::with_capacity(num_teams),
+            node_to_team: HashMap::with_capacity(num_teams),
             source_node: 0,
             sink_node: total_nodes - 1,
         };

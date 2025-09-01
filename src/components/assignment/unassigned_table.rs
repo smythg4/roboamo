@@ -60,7 +60,7 @@ pub fn UnassignedTable(
             class: "section-card",
             h2 {
                 class: "section-title-alert",
-                "👤 Unassigned Personnel"
+                "👤 Available Personnel"
             }
 
             SearchBar {

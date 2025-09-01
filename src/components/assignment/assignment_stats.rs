@@ -49,24 +49,24 @@ pub fn AssignmentStats(assignments_signal: ReadOnlySignal<Option<AssignmentPlan>
                     p { class: "stat-label-green", "People Assigned" }
                 }
                 div {
-                    class: "stat-card-unassigned",
-                    h3 { class: "stat-number-yellow", "{total_unassigned}" }
-                    p { class: "stat-label-yellow", "Unassigned" }
-                }
-                div {
                     class: "stat-card-unfilled",
                     h3 { class: "stat-number-red", "{total_unfilled}" }
                     p { class: "stat-label-red", "Unfilled Positions" }
                 }
                 div {
                     class: "stat-card-selres",
-                    h3 { class: "stat-number-blue", "{total_selres_used}" }
-                    p { class: "stat-label-blue", "SELRES Used" }
+                    h3 { class: "stat-number-yellow", "{total_selres_used}" }
+                    p { class: "stat-label-yellow", "SELRES Used" }
                 }
                 div {
                     class: "stat-card-aw",
                     h3 { class: "stat-number-purple", "{total_aw_used}" }
                     p { class: "stat-label-purple", "AWs Used" }
+                }
+                div {
+                    class: "stat-card-unassigned",
+                    h3 { class: "stat-number-blue", "{total_unassigned}" }
+                    p { class: "stat-label-blue", "Available Personnel" }
                 }
             }
         }
