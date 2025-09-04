@@ -80,54 +80,8 @@ impl FlowGraph {
     // }
 
     fn find_augmenting_path(&self, source: usize, sink: usize) -> Option<Vec<usize>> {
-        // updated to use Bellman-Ford shortest augmenting path based on edge cost
-        let mut dist = vec![i32::MAX; self.num_nodes];
-        let mut parent = vec![None; self.num_nodes];
-
-        dist[source] = 0;
-
-        for _ in 0..self.num_nodes - 1 {
-            let mut updated = false;
-
-            for u in 0..self.num_nodes {
-                if dist[u] == i32::MAX {
-                    continue;
-                }
-
-                for &edge_idx in &self.graph[u] {
-                    let edge = &self.edges[edge_idx];
-
-                    if self.residual_capacity(edge_idx) > 0 {
-                        let new_dist = dist[u].saturating_add(edge.cost);
-                        if new_dist < dist[edge.to] {
-                            dist[edge.to] = new_dist;
-                            parent[edge.to] = Some(u);
-                            updated = true;
-                        }
-                    }
-                }
-            }
-
-            if !updated {
-                break;
-            }
-        }
-
-        if dist[sink] == i32::MAX {
-            return None;
-        }
-
-        let mut path = vec![];
-        let mut current = sink;
-
-        while let Some(prev) = parent[current] {
-            path.push(current);
-            current = prev;
-        }
-        path.push(source);
-        path.reverse();
-
-        Some(path)
+        // Use Dijkstra's algorithm for better O((V+E)log V) performance vs Bellman-Ford O(VE)
+        crate::engine::djikstra::dijkstra(self, source, sink)
     }
 
     pub fn min_cost_max_flow(&mut self, source: usize, sink: usize) -> (i32, i32) {

@@ -168,12 +168,26 @@ pub fn Results() -> Element {
 
             match (people, teams) {
                 (Some(people), Some(teams)) => {
-                    match generate_assignments_from_processed_data(
+                    #[cfg(target_arch = "wasm32")]
+                    let start_time = web_sys::js_sys::Date::now();
+                    
+                    let result = generate_assignments_from_processed_data(
                         selected_date(),
                         all_locks,
                         people,
                         teams,
-                    ) {
+                    );
+                    
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        let duration = web_sys::js_sys::Date::now() - start_time;
+                        web_sys::console::log_1(&format!(
+                            "🚀 Assignment generation (processed data): {:.2}ms",
+                            duration
+                        ).into());
+                    }
+                    
+                    match result {
                         Ok(AssignmentResult {
                             flow_assignments,
                             people,
@@ -189,7 +203,21 @@ pub fn Results() -> Element {
             }
         } else {
             // Use normal file upload flow
-            match generate_assignments(selected_date(), all_locks, &app_state_read) {
+            #[cfg(target_arch = "wasm32")]
+            let start_time = web_sys::js_sys::Date::now();
+            
+            let result = generate_assignments(selected_date(), all_locks, &app_state_read);
+            
+            #[cfg(target_arch = "wasm32")]
+            {
+                let duration = web_sys::js_sys::Date::now() - start_time;
+                web_sys::console::log_1(&format!(
+                    "🚀 Assignment generation (file upload): {:.2}ms",
+                    duration
+                ).into());
+            }
+            
+            match result {
                 Ok(AssignmentResult {
                     flow_assignments,
                     people,

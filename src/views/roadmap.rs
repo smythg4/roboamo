@@ -66,13 +66,7 @@ pub fn ProductRoadmap() -> Element {
                                 icon: "👤",
                                 title: "PersonCard Tooltips",
                                 description: "Hover over personnel names to see detailed cards with qualifications, status, and current assignment",
-                                status: "planned"
-                            }
-                            FeatureCard {
-                                icon: "🔓",
-                                title: "Individual Unlock Buttons",
-                                description: "Quick unlock buttons next to each locked assignment for granular lock management",
-                                status: "planned"
+                                status: "complete"
                             }
                             FeatureCard {
                                 icon: "📈",
