@@ -44,7 +44,7 @@ fn get_qual_table(data: &HashMap<String, Vec<String>>) -> Result<HashMap<String,
     Ok(qual_table)
 }
 
-pub fn build_people(analysis_date: chrono::NaiveDate, app_state: &AppState) -> Result<Vec<Person>> {
+pub fn build_people(analysis_date: chrono::NaiveDate, app_state: &AppState) -> Result<Rc<Vec<Person>>> {
     let files = &app_state.files;
 
     let parsed_quals = files
@@ -73,9 +73,9 @@ pub fn build_people(analysis_date: chrono::NaiveDate, app_state: &AppState) -> R
         _ => bail!("Error extracting ASM data"),
     };
 
-    let people = Rc::make_mut(&mut people);
+    let people_mut = Rc::make_mut(&mut people);
 
-    for person in people.iter_mut() {
+    for person in people_mut.iter_mut() {
         person.qualifications = person
             .qualifications
             .iter()
@@ -88,12 +88,12 @@ pub fn build_people(analysis_date: chrono::NaiveDate, app_state: &AppState) -> R
         person.qualifications.extend(derivative_quals);
     }
 
-    people.retain(|person| match person.prd {
+    people_mut.retain(|person| match person.prd {
         Some(prd_date) => prd_date > analysis_date,
         None => true,
     });
 
-    Ok(people.clone())
+    Ok(people)
 }
 
 fn is_supply(name: &str) -> bool {
@@ -206,7 +206,7 @@ pub fn generate_assignments(
     assignment_locks: Option<Vec<AssignmentLock>>,
     app_state: &AppState,
 ) -> Result<AssignmentResult> {
-    let people = Rc::new(build_people(analysis_date, app_state)?);
+    let people = build_people(analysis_date, app_state)?;
     let teams = Rc::new(build_teams(app_state)?);
     let mut solver =
         AssignmentSolver::new(&people, &teams, analysis_date, assignment_locks.clone());
@@ -226,8 +226,8 @@ pub fn generate_assignments(
     }
     Ok(AssignmentResult {
         flow_assignments,
-        people: people.clone(),
-        teams: teams.clone(),
+        people, // No clone needed - Rc is designed for sharing
+        teams,  // No clone needed - Rc is designed for sharing  
     })
 }
 
@@ -295,7 +295,7 @@ pub fn build_assignment_plan(
             })?;
 
         assignments.push(Assignment {
-            person: Rc::new(person.clone()),
+            person: Rc::new(person.clone()), // TODO: Could be optimized further with person Rc sharing
             team_name: a.team.clone(),
             position: a.position.clone(),
             score: 1,
@@ -315,7 +315,7 @@ pub fn build_assignment_plan(
     }
 
     Ok(AssignmentPlan {
-        unassigned_people: Rc::new(unassigned_people.iter().copied().cloned().collect()),
+        unassigned_people: Rc::new(unassigned_people.into_iter().cloned().collect()),
         assignments,
         unfilled_positions,
     })
